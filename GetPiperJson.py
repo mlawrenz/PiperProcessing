@@ -116,24 +116,29 @@ def main(args):
         import pdb
         pdb.set_trace()
     outdir=os.path.dirname(os.path.abspath(args.infile))
-    if args.combo==True:
-        print "creating combindations of constraints from input file"
-        groups=parse_combo_residues(args.infile, args.dmax)
-        write_combo_json(groups, outdir, args.offset)
-    else:
+    if args.specific==True:
         print "reading one-to-one constraints from input file"
         resdata=parse_residues(args.infile, args.dmax)
         print resdata
         write_json(resdata, outdir, args.nrestraints)
+    else:
+        print "creating combindations of constraints from input file"
+        groups=parse_combo_residues(args.infile, args.dmax)
+        write_combo_json(groups, outdir, args.offset)
     return
 
 if __name__=="__main__":
-    parser = argparse.ArgumentParser(description='make distance restraint json file for piper')
+    parser = argparse.ArgumentParser(description='''
+make distance restraint json file for piper. Default will create unbiased
+combinations for your distances.txt file. Add --specific and restraints for the
+pairs of residues will be made''')
     parser.add_argument('-i', dest="infile", help="file with residue pairs for distance restraints")
     parser.add_argument('-d', dest="dmax", default=4.5, help="dmax for distance restraints, default is 4.5")
     parser.add_argument('-r', dest="nrestraints", default=None, help="number of distance restraints to use")
     parser.add_argument('-o', dest="offset", default=4, help="offset for number of groups of distance restraints to use")
-    parser.add_argument('--combo', action="store_true", dest="combo", help="make combinations of all restraints in input file")
+    parser.add_argument('--specific', action="store_true", dest="specific", help="use specific pairs of restraints from file. Default makes unbiased combinations.")
+
+
     parser.add_argument('--debug',  action="store_true", dest='debug', help='DEBUG FLAG')
     args = parser.parse_args()
     main(args)

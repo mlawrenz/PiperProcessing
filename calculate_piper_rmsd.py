@@ -58,8 +58,8 @@ def main():
     Main body of the script.
     """
 
-    import pdb
-    pdb.set_trace()
+    #import pdb
+    #pdb.set_trace()
     cmd_args = parse_args()
     if cmd_args.listfile:
         listfile = open(cmd_args.listfile, 'r')

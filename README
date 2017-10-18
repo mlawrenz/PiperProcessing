@@ -1,14 +1,14 @@
 General workflow for a CTM and 2 protein binding partners:
-
 Get two proteins with ligands bound (derived from CTM)
 Use information on linker length to determine ligand atom restraint cutoffs.
 Also include protein restraints (see below).
 
-*binding site residues for restraints based on ligand sites and SASA
+*binding site residues for protein-protein restraints based on ligand sites and SASA
 $SCHRODINGER/run ~/piper-scripts/find_binding_site_residues_sasa.py -r receptor-protein-with-small-molecule.pdb -l ligand-protein-with-small-molecule.pdb
 
 *get JSON restraints file from text file
 $SCHRODINGER/run ~/PiperProcessing/GetPiperJson.py -i distances_for_restraints.txt
+(defaults are set but you can check the number of restraints you have with --combo)
 
 *run piper
 receptor=$1
