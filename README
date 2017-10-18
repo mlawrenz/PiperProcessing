@@ -18,8 +18,23 @@ het2=JQ1
 restraints=distance_restraints.json
  
 run_piper --rec $receptor --lig $ligand --restraint-set $restraints --vdw-het $het1 $het2 -np 12 --mpi 
-If it complains add these flags:
+
+(((( If it complains add these flags: )))
 --piper-license ~/piper-1.1.0/piper_package/piper_license  --pip er-base ~/piper-1.1.0/piper_package
+
+*process output structure files for analysis in Maestro
+Go into the subdirectory with model*pdb files and a results.txt file. You want
+to process the model*min*pdb files. Add these to a list.txt file then run:
+$SCHRODINGER/run ~/PiperProcessing/processPiper.py -l list.txt -r report.txt
+
+This makes a maefiles/ directory, go in there.
+Make another list file of the maefiles (sorry, should combine these scripts in
+the future. Pass in reference.
+$SCHRODINGER/run ~/PiperProcessing/calculate_piper_rmsd.py -l list -r Brd4_5T35_wligand.pdb 
+
+This makes a rmsd-maefiles/ directory. You can load these files into maestro.
+
+
 
 
 

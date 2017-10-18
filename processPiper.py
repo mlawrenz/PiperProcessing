@@ -77,9 +77,8 @@ def main(args):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='make maefiles out of piper results, adding data')
-    parser.add_argument('-r','--report', dest='report', help='report file with piper data')
-
-    parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of mae files that will be get cluster property added to')
+    parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of model*min*pdb files that will be processed for maestro with cluster and enerfy properties')
+    parser.add_argument('-r','--report', dest='report', help='report file with piper data for these files')
     parser.add_argument('--debug',  action="store_true", dest='debug' )
 
     

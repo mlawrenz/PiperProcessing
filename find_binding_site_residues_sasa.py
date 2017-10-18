@@ -21,7 +21,7 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, binding_si
     print "Selecting residues for %s with SASA > %s, Recommend that you double check the selection" % (struct, sasa_cutoff)
 
     ohandle=open('%s_sasa%s_binding_site_residues.txt' % (struct, sasa_cutoff), 'w')
-    writer=structure.PDBWriter('%s_ attract.pdb' % struct)
+    writer=structure.PDBWriter('%s_attract.pdb' % struct)
     binding_sasa_dict=dict()
     delete_indices=[]
     n=0

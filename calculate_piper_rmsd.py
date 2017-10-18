@@ -32,7 +32,8 @@ def parse_args():
 
     parser.add_argument('-r', dest='reference_file', help='Reference structure file.')
 
-    parser.add_argument('-s', dest='pdb_file', help='PDB file')
+    parser.add_argument('-s', dest='pdb_file', help='PDB file if only single calc')
+
 
     parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of mae files that will be get cluster property added to')
 
@@ -57,8 +58,8 @@ def main():
     Main body of the script.
     """
 
-    #import pdb
-    #pdb.set_trace()
+    import pdb
+    pdb.set_trace()
     cmd_args = parse_args()
     if cmd_args.listfile:
         listfile = open(cmd_args.listfile, 'r')
