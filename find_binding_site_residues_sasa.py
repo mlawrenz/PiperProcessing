@@ -67,7 +67,7 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, binding_si
     print "MAX SASA IS %s Res %s%s" % (round(maxval,1), all_names_dict[maxval_res], maxval_res)
     print "MIN SASA IS %s Res %s%s" % (round(minval,1), all_names_dict[minval_res], minval_res)
     print "-------------------------"
-    return all_chains_dict
+    return chain, all_chains_dict
 
 
 def find_binding_site_residues(input_structure, distance_cutoff):
@@ -87,30 +87,32 @@ def main(args):
     structures=dict()
     structures['rec'] = args.rec
     structures['lig'] = args.lig
+    chains=dict()
     # Print parameters
-    data=dict()
+    chain_reference=dict()
     print "Distance cutoff = %s" % args.distance_cutoff
     n=0
     for struct in structures.keys():
-        data[struct]=dict()
         print "on %s %s" % (struct, structures[struct]) 
         st, binding_site_indices=find_binding_site_residues(structures[struct], args.distance_cutoff)
         binding_site_residues=[st.atom[atom]._getResnum() for atom in binding_site_indices]
         if n==0:
             all_chains_dict=dict()
             n+=1
-        all_chains_dict=filter_residues_by_sasa(struct, st, all_chains_dict, args.sasa_cutoff, binding_site_residues)
-    chain1=all_chains_dict.keys()[0]
-    chain2=all_chains_dict.keys()[1]
-    difference=len(all_chains_dict[chain1])-len(all_chains_dict[chain2])
+        chain, all_chains_dict=filter_residues_by_sasa(struct, st, all_chains_dict, args.sasa_cutoff, binding_site_residues)
+        chain_reference[struct]=chain
+    rec_chain=chain_reference['rec']
+    lig_chain=chain_reference['lig']
+    # NEED THIS SPECIFIC OUTPUT REC CHAIN REC ID LIG CHAIN LIG ID
+    difference=len(all_chains_dict[rec_chain])-len(all_chains_dict[lig_chain])
     if difference > 0:
-        all_chains_dict[chain2]=all_chains_dict[chain2] + ['NA']*abs(difference)
+        all_chains_dict[lig_chain]=all_chains_dict[lig_chain] + ['NA']*abs(difference)
     else:
-        all_chains_dict[chain1]=all_chains_dict[chain1] + ['NA']*abs(difference)
+        all_chains_dict[rec_chain]=all_chains_dict[rec_chain] + ['NA']*abs(difference)
     ohandle=open('distances_for_restraints.txt', 'w')
-    for (x,y) in zip(all_chains_dict[chain1], all_chains_dict[chain2]):
+    for (x,y) in zip(all_chains_dict[rec_chain], all_chains_dict[lig_chain]):
         
-        ohandle.write('%s-%s\t%s-%s\n' % (chain1,x, chain2, y))
+        ohandle.write('%s-%s\t%s-%s\n' % (rec_chain,x, lig_chain, y))
     return
 
 if __name__=="__main__":

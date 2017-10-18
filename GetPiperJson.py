@@ -9,17 +9,37 @@ import pickle
 
 
 
+def write_combo_json(groups,  outdir, offset):
+    dataorg=dict()
+    ngroups=len(groups)
+    dataorg["groups"]=[]
+    dataorg["required"]=ngroups-int(offset)
+    print "number of groups : %s" % ngroups
+    print "offset %s" % offset
+    print "required groups %s" % dataorg["required"]
+    for n in range(0, ngroups):
+        groupdata=dict()
+        # require 1 from the group satisfied
+        groupdata["required"]=1
+        groupdata["restraints"]=[]
+        for m in groups[n].keys():
+            groupdata["restraints"].append(groups[n][m])
+        dataorg["groups"].append(groupdata)
+    outfile=open("%s/distance_restraints.json" % outdir, 'w')
+    json.dump(dataorg, outfile)
+    return
 
-def write_json(resdata,  outdir, ngroups=1):
+
+def write_json(resdata,  outdir, nrestraints=None, ngroups=1):
     groups=[resdata,] # later can add more to have more groups
     dataorg=dict()
     dataorg["groups"]=[]
     dataorg["required"]=ngroups
     for n in range(0, ngroups):
         groupdata=dict()
-        nrestraints=len(groups[n].keys())
-        # default require N-1
-        groupdata["required"]=nrestraints-1
+        if nrestraints==None:
+            nrestraints=len(groups[n].keys())
+        groupdata["required"]=int(nrestraints)
         groupdata["restraints"]=[]
         for m in sorted(groups[n].keys()):
             groupdata["restraints"].append(groups[n][m])
@@ -28,6 +48,44 @@ def write_json(resdata,  outdir, ngroups=1):
     json.dump(dataorg, outfile)
     return
 
+def create_residue_dict(res, lig, dmax):
+    residue=dict()
+    residue['rec_chain']=res.split('-')[0]
+    residue['rec_resi']=res.split('-')[1]
+    residue['lig_chain']=lig.split('-')[0]
+    residue['lig_resi']=lig.split('-')[1]
+    residue['dmin']=float(2)
+    residue['dmax']=float(dmax) 
+    residue['type']='residue'
+    return residue
+
+def parse_combo_residues(infile, dmax):
+    groups=[]
+    resdata=dict()
+    fhandle=open(infile)
+    receptor=numpy.loadtxt(infile, usecols=(0,), dtype=str)
+    ligand=numpy.loadtxt(infile, usecols=(1,), dtype=str)
+    index=numpy.where(receptor=='NA')
+    if index:
+        receptor=numpy.delete(receptor, index)
+    index=numpy.where(ligand=='NA')
+    if index:
+        ligand=numpy.delete(ligand, index)
+    total_restraints=len(receptor)+len(ligand)
+    print "total restraints %s" % total_restraints
+    for res in receptor:
+        # make multiple restraints to ligand, will be in one group, with 1
+        # required, do the same for ligand
+        for (n, lig) in enumerate(ligand):
+            residue=create_residue_dict(res, lig, dmax)
+            resdata[n]=residue
+        groups.append(resdata)
+    for lig in ligand:
+        for (n, res) in enumerate(receptor): 
+            residue=create_residue_dict(res, lig, dmax)
+            resdata[n]=residue
+        groups.append(resdata)
+    return groups
 
 def parse_residues(infile, dmax):
     resdata=dict()
@@ -45,27 +103,38 @@ def parse_residues(infile, dmax):
         except IndexError:
              residue['dmin']=2
         try:
-            residue['dmax']=dmax
+            residue['dmax']=line.split()[3]
         except IndexError:
-             residue['dmax']=dmax 
+             residue['dmax']=float(dmax) 
         residue['type']='residue'
         resdata[n]=residue
     return resdata    
 
 
 def main(args):
-    resdata=parse_residues(args.infile, float(args.distmax))
+    if args.debug:
+        import pdb
+        pdb.set_trace()
     outdir=os.path.dirname(os.path.abspath(args.infile))
-    import pdb
-    pdb.set_trace()
-    print resdata
-    write_json(resdata, outdir)
+    if args.combo==True:
+        print "creating combindations of constraints from input file"
+        groups=parse_combo_residues(args.infile, args.dmax)
+        write_combo_json(groups, outdir, args.offset)
+    else:
+        print "reading one-to-one constraints from input file"
+        resdata=parse_residues(args.infile, args.dmax)
+        print resdata
+        write_json(resdata, outdir, args.nrestraints)
     return
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='make distance restraint json file for piper')
     parser.add_argument('-i', dest="infile", help="file with residue pairs for distance restraints")
-    parser.add_argument('-d', dest="distmax", default=4, help="maxdist for a contact")
+    parser.add_argument('-d', dest="dmax", default=4.5, help="dmax for distance restraints, default is 4.5")
+    parser.add_argument('-r', dest="nrestraints", default=None, help="number of distance restraints to use")
+    parser.add_argument('-o', dest="offset", default=4, help="offset for number of groups of distance restraints to use")
+    parser.add_argument('--combo', action="store_true", dest="combo", help="make combinations of all restraints in input file")
+    parser.add_argument('--debug',  action="store_true", dest='debug', help='DEBUG FLAG')
     args = parser.parse_args()
     main(args)
 
