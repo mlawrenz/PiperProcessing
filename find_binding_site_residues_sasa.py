@@ -35,7 +35,12 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, binding_si
             prev_chain=chain
             n+=1
         if prev_chain!=chain:
+            print "******************************************"
+            print "******************************************"
             print "chain number changes for %s, make the same!" % struct
+            print "DID NOT PRINT DISTANCES"
+            print "******************************************"
+            print "******************************************"
             sys.exit()
             
         all_sasa_dict[resnum]=sasa

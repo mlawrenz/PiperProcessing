@@ -5,38 +5,21 @@ Also include protein restraints (see below).
 
 *binding site residues for protein-protein restraints based on ligand sites and SASA
 $SCHRODINGER/run ~/piper-scripts/find_binding_site_residues_sasa.py -r receptor-protein-with-small-molecule.pdb -l ligand-protein-with-small-molecule.pdb
-output is distances_for_restraints.txt
-
-*manually make ligand restraints file in this format:
-chain-resi-atomname chain-resi-atomname
 
 *get JSON restraints file from text file
 $SCHRODINGER/run ~/PiperProcessing/GetPiperJson.py -i distances_for_restraints.txt
-(default will do all combinations of distances, add --specific to enfore the
-pairing in the text file.
+(defaults are set but you can check the number of restraints you have with --combo)
 
-*Get combined JSON restraints for protein + ligand
- $SCHRODINGER/run ~/PiperProcessing/GetPiperJson.py -proteinfile distances_for_restraints.txt -ligandfile ligand_distances.txt -o 1
-Check the options, you can change the distance min and max for ligand
-Offset sets the flexibility for how many of the restraints have to be met. D.
-Hall is still working on how to choose restraints that must be enforced, and
-then have the other be more flexible.
+*run piper
+receptor=$1
+ligand=$2
+het1=6Z3
+het2=JQ1
+restraints=distance_restraints.json
+ 
+run_piper --rec $receptor --lig $ligand --restraint-set $restraints --vdw-het $het1 $het2 -np 12 --mpi 
 
-To dock with ligand parameters:
-First make sure you have all protons and charge states correct.
-Make a PDB for each of your two ligands and run this parameterization to get a
-json:
-~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize JQ1.pdb JQ1.json
-~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize V32.pdb
-V32.json
-
-
-~/piper-1.1.2b1/piper_package/bin/run_piper --add-het JQ1:JQ1.json V32:V32.json --rec prep-aligned_vhl_5T35.pdb --lig prep-moved_brd4_5T35.pdb --restraint-set distance_restraints.json  --mpi --np 12
-
-(you can scale to more processors and put it in a script and run this on AWS with this command:
-qsub -N atlas_fbw7_12 -cwd -q cpu -pe mpi 12 ./run.sh 
-
-(((( If it complains add these flags with the right flags )))
+(((( If it complains add these flags: )))
 --piper-license ~/piper-1.1.0/piper_package/piper_license  --pip er-base ~/piper-1.1.0/piper_package
 
 *process output structure files for analysis in Maestro
@@ -50,6 +33,10 @@ the future. Pass in reference.
 $SCHRODINGER/run ~/PiperProcessing/calculate_piper_rmsd.py -l list -r Brd4_5T35_wligand.pdb 
 
 This makes a rmsd-maefiles/ directory. You can load these files into maestro.
+
+
+
+
 
 
 MORE DETAIL ON WORKFLOW BELOW:
