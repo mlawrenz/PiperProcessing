@@ -100,7 +100,7 @@ def main(args):
     for struct in structures.keys():
         print "on %s %s" % (struct, structures[struct]) 
         st, binding_site_indices=find_binding_site_residues(structures[struct], args.distance_cutoff)
-        binding_site_residues=[st.atom[atom]._getResnum() for atom in binding_site_indices]
+        binding_site_residues=[st.atom[atom].resnum for atom in binding_site_indices]
         if n==0:
             all_chains_dict=dict()
             n+=1

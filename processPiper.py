@@ -22,7 +22,8 @@ def main(args):
         pdb.set_trace()
 
 
-    split_piper='/home/mlawrenz/piper-1.1.1/piper_package/bin/split_piper'
+    PIPER_BIN=os.environ['PIPER_BIN']
+    split_piper='%s/split_piper' % PIPER_BIN
 
 
     listfile = open(args.listfile, 'r')

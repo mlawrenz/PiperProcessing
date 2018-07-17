@@ -62,12 +62,18 @@ def parse_combo_residues(infile, dmax):
     fhandle=open(infile)
     receptor=numpy.loadtxt(infile, usecols=(0,), dtype=str)
     ligand=numpy.loadtxt(infile, usecols=(1,), dtype=str)
-    index=numpy.where(receptor=='NA')
-    if index:
-        receptor=numpy.delete(receptor, index)
-    index=numpy.where(ligand=='NA')
-    if index:
-        ligand=numpy.delete(ligand, index)
+    n=0
+    for i in receptor:
+        if 'NA' in i:
+            receptor=numpy.delete(receptor, n)
+        else:
+            n+=1
+    n=0
+    for i in ligand:
+        if 'NA' in i:
+            ligand=numpy.delete(ligand, n)
+        else:
+            n+=1
     total_restraints=len(receptor)+len(ligand)
     print "total restraints %s" % total_restraints
     for res in receptor:
@@ -101,8 +107,8 @@ def parse_ligand_atoms(ligfile, ldmin, ldmax):
         ligand_lig['atom_name']=ligand.split('-')[2]
         lig_restraint["rec_atom"]=receptor_lig
         lig_restraint["lig_atom"]=ligand_lig
-        lig_restraint["dmin"]=ldmin
-        lig_restraint["dmax"]=ldmax
+        lig_restraint["dmin"]=float(ldmin)
+        lig_restraint["dmax"]=float(ldmax)
         lig_restraint["rec_type"]="atom" 
         lig_restraint["lig_type"]="atom" 
         ligdata[n]=lig_restraint
@@ -144,7 +150,7 @@ def main(args):
         if not args.ldmax:
             print "DID NOT SPECIFY MAX DIST FOR LIGAND RESTRAINT"
             print "DEFAULT IS 10"
-        ligdata=parse_ligand_atoms(args.ligand_infile, args.ldmin, args.ldmax)
+        ligdata=parse_ligand_atoms(args.ligand_infile, args.ldmin, args.ldmax)            
         if args.specific==True:
             print "reading one-to-one constraints from protein input file"
             resdata=parse_residues(args.protein_infile, args.dmax)
