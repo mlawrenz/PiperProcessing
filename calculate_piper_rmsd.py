@@ -17,62 +17,24 @@ from schrodinger.utils import cmdline, fileutils
 from schrodinger.structutils import rmsd
 
 
-##############################################################################
-def parse_args():
-    """
-    Parse the command line options.
-
-    @return:  All script arguments and options
-    @rtype:  class:`argparse.Namespace`
-    """
-
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument('-r', dest='reference_file', help='Reference structure file.')
-
-    parser.add_argument('-s', dest='pdb_file', help='PDB file if only single calc')
-
-
-    parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of mae files that will be get cluster property added to')
-
-    args = parser.parse_args()
-
-    if not os.path.isfile(args.reference_file):
-        parser.error('Input reference file %s not found.' % args.reference_file)
-
-    if args.listfile: 
-        if not os.path.isfile(args.listfile):
-            parser.error('listfile %s not found.' % args.listfile)
-    else:
-        if not os.path.isfile(args.pdb_file):
-            parser.error('PDB file %s not found.' % pdb_file)
-
-    return args
-
-
 ###############################################################################
-def main():
+def main(reference_file, listfile=None, pdb_file=None):
     """
     Main body of the script.
     """
 
-    #import pdb
-    #pdb.set_trace()
-    cmd_args = parse_args()
-    if cmd_args.listfile:
-        listfile = open(cmd_args.listfile, 'r')
+    if listfile:
+        listfile = open(listfile, 'r')
         filenames = listfile.read().splitlines()
     else:
-        filenames=[cmd_args.pdb_file]
+        filenames=[pdb_file]
 
 
     ca_asl = '(atom.ptype " CA ")'
     #basename = fileutils.get_basename(cmd_args.mobile_pdb_file[0])
     #outfile = basename + '-rmsd.mae'
 
-    ref_st = structure.StructureReader(cmd_args.reference_file).next()
+    ref_st = structure.StructureReader(reference_file).next()
     #writer.append(ref_st)
 
     ohandle=open('rmsd.txt', 'w')
@@ -89,7 +51,7 @@ def main():
                 writer.append(pdb_st)
                 continue
             except RuntimeError:
-                print '%s and %s have different number of CA atoms. Skipping.' % (cmd_args.reference_file, pdb_file)
+                print '%s and %s have different number of CA atoms. Skipping.' % (reference_file, pdb_file)
                 pass
 
         writer.close()
@@ -98,5 +60,19 @@ def main():
     os.system('mv *rmsd*.mae rmsd-maefiles/')
 
 
-if __name__ == '__main__':
-    cmdline.main_wrapper(main)
+if __name__=="__main__":
+    parser = argparse.ArgumentParser(description='compute rmsd for ligand protein to reference for set of maefiles')
+    parser.add_argument('-r', dest='reference_file', help='Reference structure file.')
+
+    parser.add_argument('-s', dest='pdb_file', help='PDB file if only single calc')
+
+
+    parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of mae files that will be get cluster property added to')
+
+    parser.add_argument('--debug',  action="store_true", dest='debug' )
+    args = parser.parse_args()
+    if args.debug:
+        import pdb
+        pdb.set_trace()
+    main(args.reference_file, args.listfile, args.pdb_file)
+

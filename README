@@ -3,65 +3,69 @@ Get two proteins with ligands bound (derived from CTM)
 Use information on linker length to determine ligand atom restraint cutoffs.
 Also include protein restraints (see below).
 
-FIRST PREPARE PROTEINS WITH PREP WIZARD AND CLEAN THE PDBS, ONLY ESSENTIAL LINES
-GET THE RESTRAINTS
----------------------------------------------------------------------------------------
 *binding site residues for protein-protein restraints based on ligand sites and SASA
+------------------------------------------
+------------------------------------------
 $SCHRODINGER/run ~/piper-scripts/find_binding_site_residues_sasa.py -r receptor-protein-with-small-molecule.pdb -l ligand-protein-with-small-molecule.pdb
-output is distances_for_restraints.txt
 
-*manually make ligand restraints file in this format:
-chain-resi-atomname chain-resi-atomname
+*get JSON restraints file from text file
+p-------------------------------------------
+$SCHRODINGER/run ~/PiperProcessing/GetPiperJson.py -i distances_for_restraints.txt
+(defaults are set but you can check the number of restraints you have with --combo)
 
+*run piper
+-------------------------------------------
+-------------------------------------------
 
-*Get combined JSON restraints for protein + ligand
- $SCHRODINGER/run ~/PiperProcessing/GetPiperJson.py -proteinfile distances_for_restraints.txt -ligandfile ligand_distances.txt -o 1
-Check the options, you can change the distance min and max for ligand
-Offset sets the flexibility for how many of the restraints have to be met. D.
-Hall is still working on how to choose restraints that must be enforced, and
-then have the other be more flexible.
+receptor=$1
+ligand=$2
+het1=6Z3
+het2=JQ1
+restraints=distance_restraints.json
+ 
+run_piper --rec $receptor --lig $ligand --restraint-set $restraints --vdw-het $het1 $het2 -np 12 --mpi 
 
-*to get JSON restraints file from protein only
-$SCHRODINGER/run ~/PiperProcessing/GetPiperJson.py -proteinfile distances_for_restraints.txt --specific
-(default will do all combinations of distances, add --specific to enfore the
-pairing in the text file.
------------------------------------------------------
-RUNNING PIPER
-To dock with ligand parameters:
-First make sure you have all protons and charge states correct.
-Make a PDB for each of your two ligands and run this parameterization to get a
-json:
-~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize JQ1.pdb JQ1.json
-~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize V32.pdb
-V32.json
-
-Protein docking commands:
-~/piper-1.1.2b1/piper_package/bin/run_piper --add-het JQ1:JQ1.json V32:V32.json --rec prep-aligned_vhl_5T35.pdb --lig prep-moved_brd4_5T35.pdb --restraint-set distance_restraints.json  --mpi --np 12
-
-(you can scale to more processors and put it in a script and run this on AWS with this command:
-qsub -N atlas_fbw7_12 -cwd -q cpu -pe mpi 12 ./run.sh 
-
-(((( If it complains add these flags with the right flags )))
+(((( If it complains add these flags: )))
 --piper-license ~/piper-1.1.0/piper_package/piper_license  --pip er-base ~/piper-1.1.0/piper_package
 
-To incorporate linker length knowledge:
-$SCHRODINGER/run ~/PiperProcessing/GetPiperJson.py  -proteinfile distances_for_restraints.txt -ligandfile ligand_restraints.txt --ldmin 10 --ldmax 20 -o 1
-
-
-
 *process output structure files for analysis in Maestro
+-------------------------------------------
+-------------------------------------------
 Go into the subdirectory with model*pdb files and a results.txt file. You want
 to process the model*min*pdb files. Add these to a list.txt file then run:
 $SCHRODINGER/run ~/PiperProcessing/processPiper.py -l list.txt -r report.txt
 
-This makes a maefiles/ directory, go in there.
-Make another list file of the maefiles (sorry, should combine these scripts in
-the future. Pass in reference.
+Pass in a reference PDB file to compute CA RMSD to the docking poses (will
+automatically check for the right protein partner, has to be same number of
+atoms):
+
+$SCHRODINGER/run ~/PIPER_WORK_2018/PiperProcessing/processPiper.py -l list.txt -r report.txt --rmsd_ref ../../5T35_D.pdb
+
+this will output maefiles/ of the complexes and rmsd-maefiles/ of just the
+protein with computed RMSD.
+
+rmsd.txt contains the RMSD values for each file prcessed.
+
+You can use the rmsd calculator tool alone as well if you pass in a list of the
+files you want to compute RMSD to.
 $SCHRODINGER/run ~/PiperProcessing/calculate_piper_rmsd.py -l list -r Brd4_5T35_wligand.pdb 
 
-This makes a rmsd-maefiles/ directory. You can load these files into maestro.
+
+*clustering analysis
+------------------------------------------
+------------------------------------------
+output PIPER cluster members with this tool
+piper_cluster_members --output-dir cluster0_output_without_minimize/ ../5T35_A.5T35_D_2.tar.xz model.000.00.min.pdb
+
+you can run process_piper.py on this output to get maefiles and charmm energies, rmsd, etc
 
 
+
+
+
+
+------------------------------------------
+------------------------------------------
 MORE DETAIL ON WORKFLOW BELOW:
 
 For protein binding site restraints first run this to get binding site
