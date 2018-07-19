@@ -25,10 +25,12 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, binding_si
     binding_sasa_dict=dict()
     delete_indices=[]
     n=0
-    for res in st._getStructureResidueIterator():
+    for res in structure.get_residues_unsorted(st):
+    #for res in structure._ResidueIterator(st, atoms='all'):
+    #for res in st._getStructureResidueIterator():
         sasa=calculator.getResidueSASA(res, sidechain=False)
-        resnum=res._getResnum()
-        resname=res._getPdbRes()
+        resnum=res._resnum
+        resname=res.pdbres
         chain=res.chain
         if n==0:
             all_chains_dict[chain]=[]

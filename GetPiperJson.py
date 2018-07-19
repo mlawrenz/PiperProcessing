@@ -143,27 +143,40 @@ def main(args):
     if args.debug:
         import pdb
         pdb.set_trace()
-    outdir=os.path.dirname(os.path.abspath(args.protein_infile))
-# DOING LIGAND + PROTEIN
+    if args.protein_infile:
+        outdir=os.path.dirname(os.path.abspath(args.protein_infile))
+    elif args.ligand_infile:
+        outdir=os.path.dirname(os.path.abspath(args.ligand_infile))
+    else:
+        print "PLEASE PROVIDE A LIGAND OR PROTEIN FILE"
+        sys.exit()
+# DOING LIGAND ONLY
     if args.ligand_infile:
         print "reading one-to-one ligand atom contraints"
         if not args.ldmax:
             print "DID NOT SPECIFY MAX DIST FOR LIGAND RESTRAINT"
             print "DEFAULT IS 10"
         ligdata=parse_ligand_atoms(args.ligand_infile, args.ldmin, args.ldmax)            
-        if args.specific==True:
-            print "reading one-to-one constraints from protein input file"
-            resdata=parse_residues(args.protein_infile, args.dmax)
-            groups=[]
-            groups.append(resdata)
-            groups.append(ligdata)
-            offset=0
+        offset=0
+        if args.protein_infile:
+# DOING LIGAND + PROTEIN
+            if args.specific==True:
+                print "reading one-to-one constraints from protein input file"
+                resdata=parse_residues(args.protein_infile, args.dmax)
+                groups=[]
+                groups.append(resdata)
+                groups.append(ligdata)
+                offset=0
+            else:
+                print "creating combindations of constraints from input file"
+                groups=parse_combo_residues(args.protein_infile, args.dmax)
+                groups.append(ligdata)
+                offset=args.offset
+            write_combo_json(groups, outdir, offset)
         else:
-            print "creating combindations of constraints from input file"
-            groups=parse_combo_residues(args.protein_infile, args.dmax)
+            groups=[]
             groups.append(ligdata)
-            offset=args.offset
-        write_combo_json(groups, outdir, offset)
+            write_combo_json(groups, outdir, offset)
     else:
 # DOING PROTEIN ONLY
         if args.specific==True:
@@ -183,12 +196,12 @@ make distance restraint json file for piper. Default will create unbiased
 combinations for your distances.txt file. Add --specific and restraints for the
 pairs of residues will be made''')
     parser.add_argument('-proteinfile', dest="protein_infile", help="file with residue pairs for distance restraints")
-    parser.add_argument('-ligandfile', dest="ligand_infile", help="file with ligand atom pairs for distance restraints")
+    parser.add_argument('-ligandfile', dest="ligand_infile", help="file with ligand atom pairs for distance restraints. First receptor protein ligand then ligand protein ligand")
     parser.add_argument('-d', dest="dmax", default=4.5, help="dmax for protein distance restraints, default is 4.5, can probably leave this unless you want less tight criteria for restraints")
     parser.add_argument('--ldmin', dest="ldmin", default=4.0, help="dmin for ligand atom distance restraints, default is 4.0")
     parser.add_argument('--ldmax', dest="ldmax", default=10.0, help="dmax for ligand atom distance restraints, default is 10.0")
     parser.add_argument('-r', dest="nrestraints", default=None, help="number of distance restraints to use")
-    parser.add_argument('-o', dest="offset", default=4, help="offset for number of groups of distance restraints to use")
+    parser.add_argument('-o', dest="offset", default=0, help="offset for number of groups of distance restraints to use")
     parser.add_argument('--specific', action="store_true", dest="specific", help="use specific pairs of restraints from file. Default makes unbiased combinations.")
     parser.add_argument('--debug',  action="store_true", dest='debug', help='DEBUG FLAG')
     args = parser.parse_args()
