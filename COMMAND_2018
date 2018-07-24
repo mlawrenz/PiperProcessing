@@ -1,0 +1,12 @@
+receptor=RRR
+ligand=LLL
+receptor_param=RPPP
+ligand_param=LPPP
+
+
+restraints=distance_restraints.json
+ 
+source ~/.bashrc
+time `$PIPER_BIN/run_piper  --add-het JQ1:${ligand_param} V32:${receptor_param} --rec $receptor --lig $ligand --restraint-set distance_restraints.json -n 24 --mpi`
+
+

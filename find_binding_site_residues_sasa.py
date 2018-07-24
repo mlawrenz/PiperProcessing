@@ -13,14 +13,15 @@ from schrodinger.structutils import analyze
 
 
 
-def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, binding_site_residues):
+def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, binding_site_residues):
     from schrodinger.application.bioluminate import protein
     calculator = protein.PropertyCalculator(st, "my_calculator_jobname")
     all_sasa_dict=dict()
     all_names_dict=dict()
     print "Selecting residues for %s with SASA > %s, Recommend that you double check the selection" % (struct, sasa_cutoff)
 
-    ohandle=open('%s_sasa%s_binding_site_residues.txt' % (struct, sasa_cutoff), 'w')
+    ohandle=open('%s_sasa%s_%s_binding_site_residues.txt' % (struct, sasa_cutoff, distance), 'w')
+
     writer=structure.PDBWriter('%s_attract.pdb' % struct)
     binding_sasa_dict=dict()
     delete_indices=[]
@@ -81,6 +82,11 @@ def find_binding_site_residues(input_structure, distance_cutoff):
     st = structure.StructureReader(input_structure).next()
     asl_searcher = analyze.AslLigandSearcher()
     ligands = asl_searcher.search(st)
+    if len(ligands)==0:
+        print "NO LIGAND IN %s, RESTART" % input_structure
+        sys.exit()
+        #import pdb
+        #pdb.set_trace()
     for lig in ligands:
         print "ligand is called %s" % lig.pdbres
         binding_site = analyze.evaluate_asl(st,"(fillres within %s %s) and (not %s)" % (distance_cutoff, lig.ligand_asl, lig.ligand_asl))
@@ -106,7 +112,8 @@ def main(args):
         if n==0:
             all_chains_dict=dict()
             n+=1
-        chain, all_chains_dict=filter_residues_by_sasa(struct, st, all_chains_dict, args.sasa_cutoff, binding_site_residues)
+        chain, all_chains_dict=filter_residues_by_sasa(struct, st,
+all_chains_dict, args.sasa_cutoff, args.distance_cutoff, binding_site_residues)
         chain_reference[struct]=chain
     rec_chain=chain_reference['rec']
     lig_chain=chain_reference['lig']

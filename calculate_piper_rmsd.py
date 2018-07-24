@@ -18,7 +18,7 @@ from schrodinger.structutils import rmsd
 
 
 ###############################################################################
-def main(reference_file, listfile=None, pdb_file=None):
+def main(reference_file, listfile=None, pdb_file=None, chain=None):
     """
     Main body of the script.
     """
@@ -31,6 +31,9 @@ def main(reference_file, listfile=None, pdb_file=None):
 
 
     ca_asl = '(atom.ptype " CA ")'
+    if chain:
+        ca_asl = '((chain.name %s)) AND ((atom.ptype " CA "))' % args.chain
+        
     #basename = fileutils.get_basename(cmd_args.mobile_pdb_file[0])
     #outfile = basename + '-rmsd.mae'
 
@@ -65,7 +68,7 @@ if __name__=="__main__":
     parser.add_argument('-r', dest='reference_file', help='Reference structure file.')
 
     parser.add_argument('-s', dest='pdb_file', help='PDB file if only single calc')
-
+    parser.add_argument('-c', dest='chain', help='chain name to use for calculation in PDB file if only single calc')
 
     parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of mae files that will be get cluster property added to')
 
@@ -74,5 +77,5 @@ if __name__=="__main__":
     if args.debug:
         import pdb
         pdb.set_trace()
-    main(args.reference_file, args.listfile, args.pdb_file)
+    main(args.reference_file, args.listfile, args.pdb_file, args.chain)
 

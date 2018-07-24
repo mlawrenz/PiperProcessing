@@ -7,13 +7,15 @@ import argparse
 import pickle
 
 
-def write_combo_json(groups,  outdir, offset):
+def write_combo_json(groups,  outdir, min_contacts):
     dataorg=dict()
     ngroups=len(groups)
     dataorg["groups"]=[]
-    dataorg["required"]=ngroups-int(offset)
+    if min_contacts=='all':
+        dataorg["required"]=ngroups
+    else:
+        dataorg["required"]=int(min_contacts)
     print "number of groups : %s" % ngroups
-    print "offset %s" % offset
     print "required groups %s" % dataorg["required"]
     for n in range(0, ngroups):
         groupdata=dict()
@@ -157,7 +159,6 @@ def main(args):
             print "DID NOT SPECIFY MAX DIST FOR LIGAND RESTRAINT"
             print "DEFAULT IS 10"
         ligdata=parse_ligand_atoms(args.ligand_infile, args.ldmin, args.ldmax)            
-        offset=0
         if args.protein_infile:
 # DOING LIGAND + PROTEIN
             if args.specific==True:
@@ -166,28 +167,30 @@ def main(args):
                 groups=[]
                 groups.append(resdata)
                 groups.append(ligdata)
-                offset=0
             else:
                 print "creating combindations of constraints from input file"
                 groups=parse_combo_residues(args.protein_infile, args.dmax)
                 groups.append(ligdata)
-                offset=args.offset
-            write_combo_json(groups, outdir, offset)
+            write_combo_json(groups, outdir, args.min_contacts)
         else:
             groups=[]
             groups.append(ligdata)
-            write_combo_json(groups, outdir, offset)
+            if args.specific:
+                write_combo_json(groups, outdir, min_contacts='all')
+            else:
+                print "ADDING SPECIFIC HERE SINCE JUST LIGAND. IF OTHERWISE CHECK SCRIPT"
+                write_combo_json(groups, outdir, min_contacts='all')
     else:
 # DOING PROTEIN ONLY
         if args.specific==True:
             print "reading one-to-one constraints from protein input file"
             resdata=parse_residues(args.protein_infile, args.dmax)
             print resdata
-            write_json(resdata, outdir, args.nrestraints)
+            write_json(resdata, outdir, args.min_contacts)
         else:
             print "creating combindations of constraints from input file"
             groups=parse_combo_residues(args.protein_infile, args.dmax)
-            write_combo_json(groups, outdir, args.offset)
+            write_combo_json(groups, outdir, args.min_contacts)
     return
 
 if __name__=="__main__":
@@ -200,8 +203,8 @@ pairs of residues will be made''')
     parser.add_argument('-d', dest="dmax", default=4.5, help="dmax for protein distance restraints, default is 4.5, can probably leave this unless you want less tight criteria for restraints")
     parser.add_argument('--ldmin', dest="ldmin", default=4.0, help="dmin for ligand atom distance restraints, default is 4.0")
     parser.add_argument('--ldmax', dest="ldmax", default=10.0, help="dmax for ligand atom distance restraints, default is 10.0")
-    parser.add_argument('-r', dest="nrestraints", default=None, help="number of distance restraints to use")
-    parser.add_argument('-o', dest="offset", default=0, help="offset for number of groups of distance restraints to use")
+    parser.add_argument('--min-contacts', dest="min_contacts", default=3,
+help="minimum number of contacts for ternary to have within selection of binding site residues. The default is 3. If you pass in (all) then this will be set to all specified.")
     parser.add_argument('--specific', action="store_true", dest="specific", help="use specific pairs of restraints from file. Default makes unbiased combinations.")
     parser.add_argument('--debug',  action="store_true", dest='debug', help='DEBUG FLAG')
     args = parser.parse_args()
