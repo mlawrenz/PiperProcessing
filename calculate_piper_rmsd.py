@@ -65,7 +65,10 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None, postprocess=N
                 ca_rmsd = conf_rmsd.calculate()
                 pdb_st.property['r_user_CA_RMSD'] = ca_rmsd
                 print pdb_st.title, ca_rmsd
-                ohandle.write('%s\t%0.2f\n' % (pdb_st.title, ca_rmsd))
+                if pdb_st.title:
+                    ohandle.write('%s\t%0.2f\n' % (pdb_st.title, ca_rmsd))
+                else:
+                    ohandle.write('%s\t%0.2f\n' % (pdb_file, ca_rmsd))
                 writer.append(pdb_st)
                 continue
             except RuntimeError:
