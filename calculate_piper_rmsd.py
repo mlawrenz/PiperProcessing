@@ -10,6 +10,7 @@ Copyright Schrodinger, LLC. All rights reserved.
 
 import os
 import csv
+import sys
 import argparse
 
 from schrodinger import structure
@@ -18,7 +19,8 @@ from schrodinger.structutils import rmsd
 
 
 ###############################################################################
-def main(reference_file, listfile=None, pdb_file=None, chain=None):
+def main(reference_file, listfile=None, pdb_file=None, chain=None, postprocess=None):
+
     """
     Main body of the script.
     """
@@ -32,7 +34,16 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None):
 
     ca_asl = '(atom.ptype " CA ")'
     if chain:
+        print "specified chain"
         ca_asl = '((chain.name %s)) AND ((atom.ptype " CA "))' % args.chain
+    if postprocess:
+        #ca_asl = '((chain.name %s)) AND (backbone)' % args.chain
+        #ca_asl = '((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT((res.ptype "NMA "))) AND ((chain.name %s))) AND NOT ((atom.ele H))' % chain
+        ca_asl='(((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT ((res.ptype "NMA "))) AND NOT ((atom.ele H))) AND NOT ((atom.ptype "OXT")))'
+
+
+
+
         
     #basename = fileutils.get_basename(cmd_args.mobile_pdb_file[0])
     #outfile = basename + '-rmsd.mae'
@@ -46,6 +57,10 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None):
         writer = structure.StructureWriter('%s-rmsd.mae' % basename.split('.mae')[0])
         for pdb_st in structure.StructureReader(pdb_file):
             try:
+                from schrodinger import structutils
+                ref_atoms=  structutils.analyze.evaluate_asl(ref_st, ca_asl)
+                model_atoms= structutils.analyze.evaluate_asl(pdb_st, ca_asl)
+
                 conf_rmsd = rmsd.ConformerRmsd(ref_st, pdb_st, asl_expr=ca_asl)
                 ca_rmsd = conf_rmsd.calculate()
                 pdb_st.property['r_user_CA_RMSD'] = ca_rmsd
@@ -59,6 +74,9 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None):
 
         writer.close()
     ohandle.close()
+    if os.path.exists('rmsd-maefiles'):
+        print "remove existing rmsd-maefiles directory first"
+        sys.exit()
     os.mkdir('rmsd-maefiles')
     os.system('mv *rmsd*.mae rmsd-maefiles/')
 
@@ -72,10 +90,13 @@ if __name__=="__main__":
 
     parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of mae files that will be get cluster property added to')
 
+    parser.add_argument('--postprocess',  action="store_true", dest='postprocess', help='will run with extra ASL flags that help with issues from protein prepping.DOH.')
+
     parser.add_argument('--debug',  action="store_true", dest='debug' )
     args = parser.parse_args()
     if args.debug:
         import pdb
         pdb.set_trace()
-    main(args.reference_file, args.listfile, args.pdb_file, args.chain)
+    main(args.reference_file, args.listfile, args.pdb_file, args.chain, args.postprocess)
+
 
