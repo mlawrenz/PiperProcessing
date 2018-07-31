@@ -13,7 +13,8 @@ from schrodinger.structutils import analyze
 
 
 
-def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, binding_site_residues):
+def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, binding_site_residues, writepdb=False):
+
     from schrodinger.application.bioluminate import protein
     calculator = protein.PropertyCalculator(st, "my_calculator_jobname")
     all_sasa_dict=dict()
@@ -22,7 +23,8 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, 
 
     ohandle=open('%s_sasa%s_%s_binding_site_residues.txt' % (struct, sasa_cutoff, distance), 'w')
 
-    writer=structure.PDBWriter('%s_attract.pdb' % struct)
+    if writepdb==True:
+        writer=structure.PDBWriter('%s_attract.pdb' % struct)
     binding_sasa_dict=dict()
     delete_indices=[]
     n=0
@@ -61,11 +63,12 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, 
             indices=res.getAtomList()
             for i in indices: delete_indices.append(i)
     st.deleteAtoms(delete_indices)
-    writer.append(st)
+    if writepdb==True:
+        writer.append(st)
+        writer.close()
     ohandle.close()
-    writer.close()
-        #at._setAtomLabelUserText('%0.2f' % sasa)
-        #print "SASA for %s %s charge %s is %0.2f" % (at.index, at.element, at.formal_charge, sasa)
+    #at._setAtomLabelUserText('%0.2f' % sasa)
+    #print "SASA for %s %s charge %s is %0.2f" % (at.index, at.element, at.formal_charge, sasa)
 
     maxval=max(all_sasa_dict.values())
     maxval_res=all_sasa_dict.keys()[ all_sasa_dict.values().index(maxval)]
@@ -99,7 +102,8 @@ def main(args):
         pdb.set_trace()
     structures=dict()
     structures['rec'] = args.rec
-    structures['lig'] = args.lig
+    if args.lig:
+        structures['lig'] = args.lig
     chains=dict()
     # Print parameters
     chain_reference=dict()
@@ -116,17 +120,17 @@ def main(args):
 all_chains_dict, args.sasa_cutoff, args.distance_cutoff, binding_site_residues)
         chain_reference[struct]=chain
     rec_chain=chain_reference['rec']
-    lig_chain=chain_reference['lig']
-    # NEED THIS SPECIFIC OUTPUT REC CHAIN REC ID LIG CHAIN LIG ID
-    difference=len(all_chains_dict[rec_chain])-len(all_chains_dict[lig_chain])
-    if difference > 0:
-        all_chains_dict[lig_chain]=all_chains_dict[lig_chain] + ['NA']*abs(difference)
-    else:
-        all_chains_dict[rec_chain]=all_chains_dict[rec_chain] + ['NA']*abs(difference)
-    ohandle=open('distances_for_restraints.txt', 'w')
-    for (x,y) in zip(all_chains_dict[rec_chain], all_chains_dict[lig_chain]):
-        
-        ohandle.write('%s-%s\t%s-%s\n' % (rec_chain,x, lig_chain, y))
+    if args.lig:
+        lig_chain=chain_reference['lig']
+        # NEED THIS SPECIFIC OUTPUT REC CHAIN REC ID LIG CHAIN LIG ID
+        difference=len(all_chains_dict[rec_chain])-len(all_chains_dict[lig_chain])
+        if difference > 0:
+            all_chains_dict[lig_chain]=all_chains_dict[lig_chain] + ['NA']*abs(difference)
+        else:
+            all_chains_dict[rec_chain]=all_chains_dict[rec_chain] + ['NA']*abs(difference)
+        ohandle=open('distances_for_restraints.txt', 'w')
+        for (x,y) in zip(all_chains_dict[rec_chain], all_chains_dict[lig_chain]):
+            ohandle.write('%s-%s\t%s-%s\n' % (rec_chain,x, lig_chain, y))
     return
 
 if __name__=="__main__":
