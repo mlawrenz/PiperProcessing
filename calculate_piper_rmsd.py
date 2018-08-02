@@ -19,7 +19,7 @@ from schrodinger.structutils import rmsd
 
 
 ###############################################################################
-def main(reference_file, listfile=None, pdb_file=None, chain=None, postprocess=None, writermsd=False):
+def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, postprocess=None, writermsd=False):
 
 
 
@@ -34,14 +34,15 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None, postprocess=N
         filenames=[pdb_file]
 
 
-    ca_asl = '(atom.ptype " CA ")'
-    if chain:
-        print "specified chain"
-        ca_asl = '((chain.name %s)) AND ((atom.ptype " CA "))' % chain
+    if not asl:
+        asl = '(atom.ptype " CA ")'
+        if chain:
+            print "specified chain"
+            asl = '((chain.name %s)) AND ((atom.ptype " CA "))' % chain
     if postprocess:
         #ca_asl = '((chain.name %s)) AND (backbone)' % args.chain
         #ca_asl = '((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT((res.ptype "NMA "))) AND ((chain.name %s))) AND NOT ((atom.ele H))' % chain
-        ca_asl='(((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT ((res.ptype "NMA "))) AND NOT ((atom.ele H))) AND NOT ((atom.ptype "OXT")))'
+        asl='(((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT ((res.ptype "NMA "))) AND NOT ((atom.ele H))) AND NOT ((atom.ptype "OXT")))'
 
 
 
@@ -53,11 +54,11 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None, postprocess=N
     ref_st = structure.StructureReader(reference_file).next()
     #writer.append(ref_st)
 
-    ohandle=open('rmsd.txt', 'w')
+    ohandle=open('new-rmsd.txt', 'w')
     for pdb_file in filenames:
         basename=os.path.basename(pdb_file)
         if writermsd:
-            writer = structure.StructureWriter('%s-rmsd.mae' % basename.split('.mae')[0].split('.pdb')[0])
+            writer = structure.StructureWriter('%s-newrmsd.mae' % basename.split('.mae')[0].split('.pdb')[0])
 
         for pdb_st in structure.StructureReader(pdb_file):
             try:
@@ -67,7 +68,7 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None, postprocess=N
 
                 conf_rmsd = rmsd.ConformerRmsd(ref_st, pdb_st, asl_expr=ca_asl)
                 ca_rmsd = conf_rmsd.calculate()
-                pdb_st.property['r_user_CA_RMSD'] = ca_rmsd
+                pdb_st.property['r_user_RMSD'] = ca_rmsd
                 print pdb_st.title, ca_rmsd
                 if pdb_st.title:
                     ohandle.write('%s\t%0.2f\n' % (pdb_st.title, ca_rmsd))
@@ -83,10 +84,10 @@ def main(reference_file, listfile=None, pdb_file=None, chain=None, postprocess=N
         if writermsd:
             writer.close()
     ohandle.close()
-    if not os.path.exists('rmsd-maefiles'):
-        os.mkdir('rmsd-maefiles')
+    if not os.path.exists('new-rmsd-maefiles'):
+        os.mkdir('new-rmsd-maefiles')
     if writermsd:
-        os.system('mv *rmsd*.mae rmsd-maefiles/')
+        os.system('mv *newrmsd*.mae new-rmsd-maefiles/')
     return
 
 
