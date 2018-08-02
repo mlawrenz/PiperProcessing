@@ -10,6 +10,8 @@ from schrodinger import structure
 from schrodinger.utils import fileutils
 from schrodinger.infra import mm
 from schrodinger.structutils import analyze
+import calculate_piper_rmsd
+
 
 def write_prime_inputs(asl, mini=False):
     if mini==True:
@@ -134,7 +136,25 @@ def find_binding_site_residues(input_structure, distance_cutoff):
     for lig in ligands:
         print "ligand is called %s" % lig.pdbres
         binding_site = analyze.evaluate_asl(st,"(fillres within %s %s) and (not %s)" % (distance_cutoff, lig.ligand_asl, lig.ligand_asl))
-    return st, binding_site
+    return ligands, st, binding_site
+
+
+def get_asl(rec_chain, lig_chain, all_chains_dict, backbone=False):
+    rec_num=[]
+    for (n, x) in enumerate(all_chains_dict[rec_chain]):
+        if x!='NA':
+            rec_num.append(str(x))
+    lig_num=[]
+    for (n, x) in enumerate(all_chains_dict[lig_chain]):
+        if x!='NA':
+            lig_num.append(str(x))
+    rec_num=','.join(rec_num)
+    lig_num=','.join(lig_num)
+    asl='((chain %s) AND (res.num %s)) OR ((chain %s) AND (res.num %s))' % (rec_chain, rec_num, lig_chain, lig_num)
+    if backbone==True:
+        print "calculating RMSD to residues on ligand entry only"
+        asl='(((chain %s) AND (res.num %s))) AND (( backbone or atom.pt CB ) )' % ( lig_chain, lig_num)
+    return asl
 
 
 def main(args):
@@ -152,7 +172,7 @@ def main(args):
     n=0
     for struct in structures.keys():
         print "on %s %s" % (struct, structures[struct]) 
-        st, binding_site_indices=find_binding_site_residues(structures[struct], args.distance_cutoff)
+        ligands, st, binding_site_indices=find_binding_site_residues(structures[struct], args.distance_cutoff)
         binding_site_residues=[st.atom[atom].resnum for atom in binding_site_indices]
         if n==0:
             all_chains_dict=dict()
@@ -174,19 +194,18 @@ all_chains_dict, args.sasa_cutoff, args.distance_cutoff, binding_site_residues)
             ohandle.write('%s-%s\t%s-%s\n' % (rec_chain,x, lig_chain, y))
         ohandle.close()
         if args.prime==True:
-            rec_num=[]
-            for (n, x) in enumerate(all_chains_dict[rec_chain]):
-                if x!='NA':
-                    rec_num.append(str(x))
-            lig_num=[]
-            for (n, x) in enumerate(all_chains_dict[lig_chain]):
-                if x!='NA':
-                    lig_num.append(str(x))
-            rec_num=','.join(rec_num)
-            lig_num=','.join(lig_num)
-            asl='((chain %s) AND (res.num %s)) OR ((chain %s) AND (res.num %s))' % (rec_chain, rec_num, lig_chain, lig_num)
+            asl=get_asl(rec_chain, lig_chain, all_chains_dict, backbone=False)
             write_prime_inputs(asl, mini=True)
             write_prime_inputs(asl, mini=False)
+        if args.rmsd==True:
+            #asl=get_asl(rec_chain, lig_chain, all_chains_dict, backbone=True)
+            ligands, st, binding_site_indices=find_binding_site_residues(structures['lig'], args.distance_cutoff)
+            #asl='((res.ptype "%s")) AND NOT ((atom.ele H))' % ligands[0].pdbres
+            asl='((fillres within 4 ((res.ptype "%s") ) ) AND (( backbone ) )) AND NOT ((atom.ele H)) AND ((chain.name %s))  ' % (ligands[0].pdbres, lig_chain)
+            calculate_piper_rmsd.main(args.lig, listfile=args.rmsdlist, asl=asl, writermsd=True)
+
+
+
     return
 
 if __name__=="__main__":
@@ -198,7 +217,8 @@ if __name__=="__main__":
     parser.add_argument('-d', dest='distance_cutoff', type=float, default=4, help="Receptor-ligand distance cutoff for residue selection. Default is 4.0 Anstrom")
     parser.add_argument('--debug',action='store_true',help="Debug.")
     parser.add_argument('--prime',action='store_true',help="Write prime outputs with ASL from find SASA")
+    parser.add_argument('--rmsd',action='store_true',help="Compute RMSD with SASA binding site residues, backbone, output RMSD.")
+    parser.add_argument('--rmsdlist', dest='rmsdlist', help="List of files to Compute RMSD with SASA binding site residues, backbone, output RMSD.")
 
     args = parser.parse_args()
     main(args)
-

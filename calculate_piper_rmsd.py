@@ -40,8 +40,8 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
             print "specified chain"
             asl = '((chain.name %s)) AND ((atom.ptype " CA "))' % chain
     if postprocess:
-        #ca_asl = '((chain.name %s)) AND (backbone)' % args.chain
-        #ca_asl = '((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT((res.ptype "NMA "))) AND ((chain.name %s))) AND NOT ((atom.ele H))' % chain
+        #asl = '((chain.name %s)) AND (backbone)' % args.chain
+        #asl = '((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT((res.ptype "NMA "))) AND ((chain.name %s))) AND NOT ((atom.ele H))' % chain
         asl='(((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT ((res.ptype "NMA "))) AND NOT ((atom.ele H))) AND NOT ((atom.ptype "OXT")))'
 
 
@@ -63,10 +63,10 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
         for pdb_st in structure.StructureReader(pdb_file):
             try:
                 from schrodinger import structutils
-                ref_atoms=  structutils.analyze.evaluate_asl(ref_st, ca_asl)
-                model_atoms= structutils.analyze.evaluate_asl(pdb_st, ca_asl)
+                ref_atoms=  structutils.analyze.evaluate_asl(ref_st, asl)
+                model_atoms= structutils.analyze.evaluate_asl(pdb_st, asl)
 
-                conf_rmsd = rmsd.ConformerRmsd(ref_st, pdb_st, asl_expr=ca_asl)
+                conf_rmsd = rmsd.ConformerRmsd(ref_st, pdb_st, asl_expr=asl)
                 ca_rmsd = conf_rmsd.calculate()
                 pdb_st.property['r_user_RMSD'] = ca_rmsd
                 print pdb_st.title, ca_rmsd
