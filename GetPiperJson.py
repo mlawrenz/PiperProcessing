@@ -60,7 +60,6 @@ def create_residue_dict(res, lig, dmax):
 
 def parse_combo_residues(infile, dmax):
     groups=[]
-    resdata=dict()
     fhandle=open(infile)
     receptor=numpy.loadtxt(infile, usecols=(0,), dtype=str)
     ligand=numpy.loadtxt(infile, usecols=(1,), dtype=str)
@@ -81,11 +80,14 @@ def parse_combo_residues(infile, dmax):
     for res in receptor:
         # make multiple restraints to ligand, will be in one group, with 1
         # required, do the same for ligand
+        
+        resdata=dict()
         for (n, lig) in enumerate(ligand):
             residue=create_residue_dict(res, lig, dmax)
             resdata[n]=residue
         groups.append(resdata)
     for lig in ligand:
+        resdata=dict()
         for (n, res) in enumerate(receptor): 
             residue=create_residue_dict(res, lig, dmax)
             resdata[n]=residue

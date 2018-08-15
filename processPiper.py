@@ -21,6 +21,9 @@ def measure_distance(st, rec_residue, rec_atom, lig_residue, lig_atom):
     st=st.next()
     from schrodinger import structutils
     asl_expr='(res.ptype "%s ") AND (atom. "%s")' % (lig_residue, lig_atom)
+    asl_searcher = structutils.analyze.AslLigandSearcher()
+    ligands = asl_searcher.search(st)
+
     atom1=structutils.analyze.evaluate_asl(st, asl_expr)
     asl_expr='(res.ptype "%s ") AND (atom. "%s")' % (rec_residue, rec_atom)
     atom2=structutils.analyze.evaluate_asl(st, asl_expr)

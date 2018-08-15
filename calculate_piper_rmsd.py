@@ -36,6 +36,7 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
 
     if not asl:
         asl = '(atom.ptype " CA ")'
+        outfile='rmsd.txt'
         if chain:
             print "specified chain"
             asl = '((chain.name %s)) AND ((atom.ptype " CA "))' % chain
@@ -43,6 +44,7 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
         #asl = '((chain.name %s)) AND (backbone)' % args.chain
         #asl = '((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT((res.ptype "NMA "))) AND ((chain.name %s))) AND NOT ((atom.ele H))' % chain
         asl='(((((( backbone ) ) AND NOT ((res.ptype "ACE "))) AND NOT ((res.ptype "NMA "))) AND NOT ((atom.ele H))) AND NOT ((atom.ptype "OXT")))'
+        outfile='new-rmsd.txt'
 
 
 
@@ -54,11 +56,11 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
     ref_st = structure.StructureReader(reference_file).next()
     #writer.append(ref_st)
 
-    ohandle=open('new-rmsd.txt', 'w')
+    ohandle=open(outfile, 'w')
     for pdb_file in filenames:
         basename=os.path.basename(pdb_file)
         if writermsd:
-            writer = structure.StructureWriter('%s-newrmsd.mae' % basename.split('.mae')[0].split('.pdb')[0])
+            writer = structure.StructureWriter('%s-rmsd.mae' % basename.split('.mae')[0].split('.pdb')[0])
 
         for pdb_st in structure.StructureReader(pdb_file):
             try:
@@ -84,10 +86,10 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
         if writermsd:
             writer.close()
     ohandle.close()
-    if not os.path.exists('new-rmsd-maefiles'):
-        os.mkdir('new-rmsd-maefiles')
+    if not os.path.exists('rmsd-maefiles'):
+        os.mkdir('rmsd-maefiles')
     if writermsd:
-        os.system('mv *newrmsd*.mae new-rmsd-maefiles/')
+        os.system('mv *rmsd*.mae rmsd-maefiles/')
     return
 
 
