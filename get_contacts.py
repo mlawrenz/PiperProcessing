@@ -75,6 +75,8 @@ def main(listfile, reference):
         fraction_native_contacts.append(('prep-%s' % file.split('prep-')[1].split('-out')[0], float(count)/total_native)) 
 
         dir=os.path.dirname(file)
+        if dir=='':
+            dir='./'
         numpy.savetxt('%s/contacts_model.000.summary.txt' % dir, fraction_native_contacts, fmt='%s')
 
     return

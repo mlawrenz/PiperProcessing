@@ -161,7 +161,7 @@ def main(args):
         listfile = open(args.listfile, 'r')
         filenames = listfile.read().splitlines()
     else:
-        filenames=glob.glob('model*min*.pdb')
+        filenames=sorted(glob.glob('model.000.*min*.pdb'))
     
     if not os.path.exists('report.txt'):
         print "NEED TO BE IN DIRECTORY WITH report.txt"

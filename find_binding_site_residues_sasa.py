@@ -214,7 +214,7 @@ if __name__=="__main__":
     parser.add_argument('-l', dest="lig", help="PDB ligand file for docking, with ligand. Can leave this off to just compute SASA list for receptor protein.")
 
     parser.add_argument('-s', dest='sasa_cutoff', type=float, default=50, help="SASA cutoff for binding site residue selection. Default is 50 Angstrom^2")
-    parser.add_argument('-d', dest='distance_cutoff', type=float, default=4, help="Receptor-ligand distance cutoff for residue selection. Default is 4.0 Anstrom")
+    parser.add_argument('-d', dest='distance_cutoff', type=float, default=8.0, help="Receptor-ligand distance cutoff for residue selection. Default is 8.0 Anstrom")
     parser.add_argument('--debug',action='store_true',help="Debug.")
     parser.add_argument('--prime',action='store_true',help="Write prime outputs with ASL from find SASA")
     parser.add_argument('--rmsd',action='store_true',help="Compute RMSD with SASA binding site residues, backbone, output RMSD.")

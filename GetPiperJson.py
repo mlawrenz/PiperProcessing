@@ -22,6 +22,8 @@ def write_combo_json(groups,  outdir, min_contacts):
         # require 1 from the group satisfied
         groupdata["required"]=1
         groupdata["restraints"]=[]
+        if 'lig_atom' in groups[n][0]:
+            groupdata["group_required"]=True
         for m in groups[n].keys():
             groupdata["restraints"].append(groups[n][m])
         dataorg["groups"].append(groupdata)
