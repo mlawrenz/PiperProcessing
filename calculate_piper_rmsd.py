@@ -55,7 +55,7 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
 
     ref_st = structure.StructureReader(reference_file).next()
     #writer.append(ref_st)
-
+    outfile='rmsd.txt'
     ohandle=open(outfile, 'w')
     for pdb_file in filenames:
         basename=os.path.basename(pdb_file)
@@ -108,7 +108,5 @@ if __name__=="__main__":
     if args.debug:
         import pdb
         pdb.set_trace()
-    main(args.reference_file, args.listfile, args.pdb_file, args.chain, args.writermsd)
-
-
+    main(reference_file=args.reference_file, listfile=args.listfile, pdb_file=args.pdb_file, chain=args.chain, writermsd=args.writermsd)
 
