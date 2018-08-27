@@ -17,6 +17,8 @@ def coeff(val):
     return coeffs[val]
 
 
+# DOES NOT USE THIS UTILIY ANYMORE, WAS USED TO FILTER BY LIGAND ATOM-TO-ATOM
+# DISTNACE, COULD CALLED IF NEEDED
 def measure_distance(st, rec_residue, rec_atom, lig_residue, lig_atom):
     st=st.next()
     from schrodinger import structutils
@@ -78,7 +80,7 @@ def get_rmsd_data(data):
     return data
     
 
-def get_maefiles(rfile, filenames, reference_file=None, chain=None, lig_residue=None, rec_residue=None, lig_atom=None, rec_atom=None):
+def get_maefiles(rfile, filenames, reference_file=None, chain=None):
 
 
     data=read_report(rfile)
@@ -94,18 +96,11 @@ def get_maefiles(rfile, filenames, reference_file=None, chain=None, lig_residue=
             sys.exit()
         ohandle=open('triagelist.txt', 'w')
         for fname in filenames :
+        # previously was filtering on ligand atom=to-atom distance so writing
+        # out a triage list but do not need anymore
             new_structure_file='complex-%s' % fname
             st=structure.StructureReader(new_structure_file)
-            if rec_atom:
-                distance=measure_distance(st, rec_residue, rec_atom, lig_residue, lig_atom)
-                if distance > 20:
-                    print("DISCARDING POSE %s" % new_structure_file)
-                    print(distance)
-                    continue
-                else:
-                    ohandle.write('%s\n' % new_structure_file)
-            else:
-                    ohandle.write('%s\n' % new_structure_file)
+            ohandle.write('%s\n' % new_structure_file)
         ohandle.close()
         calculate_piper_rmsd.main(reference_file, listfile='triagelist.txt', chain=chain)
         # add rmsd to maefile data
@@ -116,16 +111,7 @@ def get_maefiles(rfile, filenames, reference_file=None, chain=None, lig_residue=
         for fname in filenames :
             new_structure_file='complex-%s' % fname
             st=structure.StructureReader(new_structure_file)
-            if rec_atom:
-                distance=measure_distance(st, rec_residue, rec_atom, lig_residue, lig_atom)
-                if distance > 20:
-                    print("DISCARDING POSE %s" % new_structure_file)
-                    print(distance)
-                    continue
-                else:
-                    ohandle.write('%s\n' % new_structure_file)
-            else:
-                    ohandle.write('%s\n' % new_structure_file)
+            ohandle.write('%s\n' % new_structure_file)
         ohandle.close()
     
     newlist=open('triagelist.txt')
@@ -167,7 +153,7 @@ def main(args):
         print("NEED TO BE IN DIRECTORY WITH report.txt")
         sys.exit()
     rfile=open('report.txt', 'r')
-    get_maefiles(rfile, filenames, args.reference_file, args.chain, args.lig_residue, args.rec_residue, args.lig_atom, args.rec_atom)
+    get_maefiles(rfile, filenames, args.reference_file, args.chain)
 
     excess=glob.glob('complex*.pdb')
     for f in excess:
@@ -181,11 +167,7 @@ if __name__=="__main__":
 
     parser.add_argument('-l','--listfile', dest='listfile', help='file list with names of files that will be processed for maestro with cluster and energy properties. If you do not pass this, will run on *min*.pdb')
     parser.add_argument('--chain', dest='chain', help='chain in complex for ligand to compute RMSD')
-    parser.add_argument('--rmsd-ref', dest='reference_file', help='reference to report RMSD for all structures;')
-    parser.add_argument('--rec_residue', dest='rec_residue', help='receptor small molecule residue name')
-    parser.add_argument('--lig_residue', dest='lig_residue', help='ligand small molecule residue name')
-    parser.add_argument('--lig_atom', dest='lig_atom', help='ligand small molecule atom name')
-    parser.add_argument('--rec_atom', dest='rec_atom', help='receptor small molecule atom name')
+    parser.add_argument('--rmsd-ref', dest='reference_file', help='reference to report all CA atom RMSD for all structures;')
     parser.add_argument('--debug',  action="store_true", dest='debug' )
 
     

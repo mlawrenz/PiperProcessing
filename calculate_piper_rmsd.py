@@ -53,7 +53,7 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
     #basename = fileutils.get_basename(cmd_args.mobile_pdb_file[0])
     #outfile = basename + '-rmsd.mae'
 
-    ref_st = structure.StructureReader(reference_file).next()
+    ref_st = next(structure.StructureReader(reference_file))
     #writer.append(ref_st)
     outfile='rmsd.txt'
     ohandle=open(outfile, 'w')

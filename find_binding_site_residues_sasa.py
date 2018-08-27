@@ -62,7 +62,8 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, 
     calculator = protein.PropertyCalculator(st, "my_calculator_jobname")
     all_sasa_dict=dict()
     all_names_dict=dict()
-    print "Selecting residues for %s with SASA > %s, Recommend that you double check the selection" % (struct, sasa_cutoff)
+    print("Selecting residues for %s with SASA > %s, Recommend that you double check the selection" % (struct, sasa_cutoff))
+
 
     ohandle=open('%s_sasa%s_%s_binding_site_residues.txt' % (struct, sasa_cutoff, distance), 'w')
 
@@ -83,20 +84,19 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, 
             prev_chain=chain
             n+=1
         if prev_chain!=chain:
-            print "******************************************"
-            print "******************************************"
-            print "chain number changes for %s, make the same!" % struct
-            print "DID NOT PRINT DISTANCES"
-            print "******************************************"
-            print "******************************************"
+            print("******************************************")
+            print("******************************************")
+            print("chain number changes for %s, make the same!" % struct)
+            print("DID NOT PRINT DISTANCES")
+            print("******************************************")
+            print("******************************************")
             sys.exit()
             
         all_sasa_dict[resnum]=sasa
         all_names_dict[resnum]=resname
         if resnum in binding_site_residues:
-            print "%s%s SASA %s" % ( resname, resnum, round(sasa, 1))
+            #print("%s%s SASA %s" % ( resname, resnum, round(sasa, 1)))
             if sasa > sasa_cutoff:
-                #writer.append(res.extractStructure())
                 all_chains_dict[chain].append(resnum)
                 ohandle.write("%s%s SASA %s\n" % ( resname, resnum, round(sasa, 1)))
             else:
@@ -110,31 +110,32 @@ def filter_residues_by_sasa(struct, st, all_chains_dict, sasa_cutoff, distance, 
         writer.append(st)
         writer.close()
     ohandle.close()
-    #at._setAtomLabelUserText('%0.2f' % sasa)
-    #print "SASA for %s %s charge %s is %0.2f" % (at.index, at.element, at.formal_charge, sasa)
 
     maxval=max(all_sasa_dict.values())
-    maxval_res=all_sasa_dict.keys()[ all_sasa_dict.values().index(maxval)]
-    minval=min(all_sasa_dict.values())
-    minval_res=all_sasa_dict.keys()[ all_sasa_dict.values().index(minval)]
-    #if verbose==True:
-    print "MAX SASA IS %s Res %s%s" % (round(maxval,1), all_names_dict[maxval_res], maxval_res)
-    print "MIN SASA IS %s Res %s%s" % (round(minval,1), all_names_dict[minval_res], minval_res)
-    print "-------------------------"
+    import collections
+    all_sasa_dict_values=collections.deque(all_sasa_dict.values())
+    all_sasa_dict_keys=collections.deque(all_sasa_dict.keys())
+    maxval=max(all_sasa_dict_values)
+    maxval_res=all_sasa_dict_keys[ all_sasa_dict_values.index(maxval)]
+    minval=min(all_sasa_dict_values)
+    minval_res=all_sasa_dict_keys[ all_sasa_dict_values.index(minval)]
+    print("MAX SASA IS %s Res %s%s" % (round(maxval,1), all_names_dict[maxval_res], maxval_res))
+    print("MIN SASA IS %s Res %s%s" % (round(minval,1), all_names_dict[minval_res], minval_res))
+    print("-------------------------")
     return chain, all_chains_dict
 
 
 def find_binding_site_residues(input_structure, distance_cutoff):
-    st = structure.StructureReader(input_structure).next()
+    st = next(structure.StructureReader(input_structure))
     asl_searcher = analyze.AslLigandSearcher()
     ligands = asl_searcher.search(st)
     if len(ligands)==0:
-        print "NO LIGAND IN %s, RESTART" % input_structure
+        print("NO LIGAND IN %s, RESTART" % input_structure)
         sys.exit()
         #import pdb
         #pdb.set_trace()
     for lig in ligands:
-        print "ligand is called %s" % lig.pdbres
+        print("ligand is called %s" % lig.pdbres)
         binding_site = analyze.evaluate_asl(st,"(fillres within %s %s) and (not %s)" % (distance_cutoff, lig.ligand_asl, lig.ligand_asl))
     return ligands, st, binding_site
 
@@ -152,7 +153,7 @@ def get_asl(rec_chain, lig_chain, all_chains_dict, backbone=False):
     lig_num=','.join(lig_num)
     asl='((chain %s) AND (res.num %s)) OR ((chain %s) AND (res.num %s))' % (rec_chain, rec_num, lig_chain, lig_num)
     if backbone==True:
-        print "calculating RMSD to residues on ligand entry only"
+        print("calculating RMSD to residues on ligand entry only")
         asl='(((chain %s) AND (res.num %s))) AND (( backbone or atom.pt CB ) )' % ( lig_chain, lig_num)
     return asl
 
@@ -168,10 +169,10 @@ def main(args):
     chains=dict()
     # Print parameters
     chain_reference=dict()
-    print "Distance cutoff = %s" % args.distance_cutoff
+    print("Distance cutoff = %s" % args.distance_cutoff)
     n=0
     for struct in structures.keys():
-        print "on %s %s" % (struct, structures[struct]) 
+        print("on %s %s" % (struct, structures[struct]))
         ligands, st, binding_site_indices=find_binding_site_residues(structures[struct], args.distance_cutoff)
         binding_site_residues=[st.atom[atom].resnum for atom in binding_site_indices]
         if n==0:
@@ -184,12 +185,16 @@ all_chains_dict, args.sasa_cutoff, args.distance_cutoff, binding_site_residues)
     if args.lig:
         lig_chain=chain_reference['lig']
         # NEED THIS SPECIFIC OUTPUT REC CHAIN REC ID LIG CHAIN LIG ID
+        total_possible_contacts=len(all_chains_dict[rec_chain])+len(all_chains_dict[lig_chain])
+        print("TOTAL CONTACTS %s" % total_possible_contacts)
+        print("RECOMMEND %i for minimum" % round((0.2*total_possible_contacts)))
+
         difference=len(all_chains_dict[rec_chain])-len(all_chains_dict[lig_chain])
         if difference > 0:
             all_chains_dict[lig_chain]=all_chains_dict[lig_chain] + ['NA']*abs(difference)
         else:
             all_chains_dict[rec_chain]=all_chains_dict[rec_chain] + ['NA']*abs(difference)
-        ohandle=open('distances_for_restraints.txt', 'w')
+        ohandle=open('protein_distances_for_restraints.txt', 'w')
         for (x,y) in zip(all_chains_dict[rec_chain], all_chains_dict[lig_chain]):
             ohandle.write('%s-%s\t%s-%s\n' % (rec_chain,x, lig_chain, y))
         ohandle.close()
@@ -198,9 +203,7 @@ all_chains_dict, args.sasa_cutoff, args.distance_cutoff, binding_site_residues)
             write_prime_inputs(asl, mini=True)
             write_prime_inputs(asl, mini=False)
         if args.rmsd==True:
-            #asl=get_asl(rec_chain, lig_chain, all_chains_dict, backbone=True)
             ligands, st, binding_site_indices=find_binding_site_residues(structures['lig'], args.distance_cutoff)
-            #asl='((res.ptype "%s")) AND NOT ((atom.ele H))' % ligands[0].pdbres
             asl='((fillres within 4 ((res.ptype "%s") ) ) AND (( backbone ) )) AND NOT ((atom.ele H)) AND ((chain.name %s))  ' % (ligands[0].pdbres, lig_chain)
             calculate_piper_rmsd.main(args.lig, listfile=args.rmsdlist, asl=asl, writermsd=True)
 
