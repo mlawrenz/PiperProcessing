@@ -63,14 +63,14 @@ def read_report(rfile):
 
 def get_rmsd_data(data):
     if not os.path.exists('rmsd.txt'):
-        print "MISSING RMSD FILE. CHECK SCRIPT"
+        print("MISSING RMSD FILE. CHECK SCRIPT")
         sys.exit()
     rmsdfile=open('rmsd.txt')
     for line in rmsdfile.readlines():
         molname=line.split()[0].split('.pdb')[0].split('.mae')[0]
         rmsd=float(line.split()[1])
         if molname not in data.keys():
-            print "missing %s from data" % molname  
+            print("missing %s from data" % molname)
             import pdb
             pdb.set_trace()
         else:
@@ -90,7 +90,7 @@ def get_maefiles(rfile, filenames, reference_file=None, chain=None, lig_residue=
         #### 
     if reference_file:
         if not chain:
-            print "REQUIRES PROTEIN CHAIN NAME"
+            print("REQUIRES PROTEIN CHAIN NAME")
             sys.exit()
         ohandle=open('triagelist.txt', 'w')
         for fname in filenames :
@@ -99,8 +99,8 @@ def get_maefiles(rfile, filenames, reference_file=None, chain=None, lig_residue=
             if rec_atom:
                 distance=measure_distance(st, rec_residue, rec_atom, lig_residue, lig_atom)
                 if distance > 20:
-                    print "DISCARDING POSE %s" % new_structure_file
-                    print distance
+                    print("DISCARDING POSE %s" % new_structure_file)
+                    print(distance)
                     continue
                 else:
                     ohandle.write('%s\n' % new_structure_file)
@@ -119,8 +119,8 @@ def get_maefiles(rfile, filenames, reference_file=None, chain=None, lig_residue=
             if rec_atom:
                 distance=measure_distance(st, rec_residue, rec_atom, lig_residue, lig_atom)
                 if distance > 20:
-                    print "DISCARDING POSE %s" % new_structure_file
-                    print distance
+                    print("DISCARDING POSE %s" % new_structure_file)
+                    print(distance)
                     continue
                 else:
                     ohandle.write('%s\n' % new_structure_file)
@@ -138,7 +138,7 @@ def get_maefiles(rfile, filenames, reference_file=None, chain=None, lig_residue=
         if not os.path.exists(outdir):
             os.mkdir(outdir)
         writer = structure.StructureWriter('%s/%s.mae' % (outdir, molname))
-        print "writing %s.mae" % molname
+        print("writing %s.mae" % molname)
         for st in structure.StructureReader(new_structure_file.rstrip()):
             st.title=molname
             propedit.addProperty(st, 'r_piper_charmm_energy', data[molname]['charmm_energy'], add=True)
@@ -164,7 +164,7 @@ def main(args):
         filenames=sorted(glob.glob('model.000.*min*.pdb'))
     
     if not os.path.exists('report.txt'):
-        print "NEED TO BE IN DIRECTORY WITH report.txt"
+        print("NEED TO BE IN DIRECTORY WITH report.txt")
         sys.exit()
     rfile=open('report.txt', 'r')
     get_maefiles(rfile, filenames, args.reference_file, args.chain, args.lig_residue, args.rec_residue, args.lig_atom, args.rec_atom)

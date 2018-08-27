@@ -38,7 +38,7 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
         asl = '(atom.ptype " CA ")'
         outfile='rmsd.txt'
         if chain:
-            print "specified chain"
+            print("specified chain")
             asl = '((chain.name %s)) AND ((atom.ptype " CA "))' % chain
     if postprocess:
         #asl = '((chain.name %s)) AND (backbone)' % args.chain
@@ -71,7 +71,7 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
                 conf_rmsd = rmsd.ConformerRmsd(ref_st, pdb_st, asl_expr=asl)
                 ca_rmsd = conf_rmsd.calculate()
                 pdb_st.property['r_user_RMSD'] = ca_rmsd
-                print pdb_st.title, ca_rmsd
+                print(pdb_st.title, ca_rmsd)
                 if pdb_st.title:
                     ohandle.write('%s\t%0.2f\n' % (pdb_st.title, ca_rmsd))
                 else:
@@ -80,7 +80,7 @@ def main(reference_file, asl=None, listfile=None, pdb_file=None, chain=None, pos
                     writer.append(pdb_st)
                 continue
             except RuntimeError:
-                print '%s and %s have different number of CA atoms. Skipping.' % (reference_file, pdb_file)
+                print('%s and %s have different number of CA atoms. Skipping.' % (reference_file, pdb_file))
                 pass
 
         if writermsd:

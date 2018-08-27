@@ -52,6 +52,7 @@ def main(listfile, reference):
         print contact
     print "%s total %s contacts" % (reference, len(native))
     total_native=len(native)    
+    print "total native %s" % total_native
     
     fraction_native_contacts=[]
 
