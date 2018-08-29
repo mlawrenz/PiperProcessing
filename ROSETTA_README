@@ -1,0 +1,30 @@
+babel 5T35_CTM.pdb 5T35_CTM.mol2
+/opt/apps/Rosetta/main//source/scripts/python/public/molfile_to_params.py -n SRO -p SRO --conformers-in-one-file molecule.mol2
+
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/opt/apps/Rosetta/main/source/build/external/release/linux/3.10/64/x86/gcc/4.8/default/^C        
+
+# clean pdb file converted from maestro
+./clean_pdb_files.sh
+
+# first clean PDBs then cat in the rosetta output PDB
+grep -v UNL clean-rot-complex0.pdb | grep -v TER | grep -v END > rosetta-clean-rot-complex0.pdb
+for file in `ls clean*pdb`; do  grep -v JQ1 $file | grep -v END | grep -v TER | grep -v V32 > rosetta-$file; done
+for file in `ls rosetta*pdb`; do cat v32.pdb >> $file; cat JQ1.pdb  >> $file; done
+
+
+
+
+structconvert -ipdb prime-mmgbsa-rot-complex0_CTM_0001.pdb -omae prime-mmgbsa-rot-complex0_CTM_0001.mae
+# dont' need to convert to pv in order to split
+$SCHRODINGER/run /opt/apps/Schrodinger/default/mmshare-v4.1/python/common/pv_convert.py -mode split_pv prime-mmgbsa-rot-complex0_CTM_0001.mae -lig_last_mol
+
+$SCHRODINGER/run split_structure.py -k  -many_files prime-mmgbsa-rot-complex0_CTM_0001-out_pv.mae prime-mmgbsa-rot-complex0_CTM_0001_split.mae
+
+
+
+ for dir in `ls -d complex*/`; do tmp=${dir%%/*}; num=${tmp##*complex};
+> sed "s/NNN/${num}/g" < run.sh > $dir/run${num}.sh
+> done
+
+
+awk '{print $2, $23}' score.sc

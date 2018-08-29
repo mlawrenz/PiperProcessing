@@ -15,8 +15,8 @@ def write_combo_json(groups,  outdir, min_contacts):
         dataorg["required"]=ngroups
     else:
         dataorg["required"]=int(min_contacts)
-    print "number of groups : %s" % ngroups
-    print "required groups %s" % dataorg["required"]
+    print("number of groups : %s" % ngroups)
+    print("required groups %s" % dataorg["required"])
     for n in range(0, ngroups):
         groupdata=dict()
         # require 1 from the group satisfied
@@ -63,8 +63,8 @@ def create_residue_dict(res, lig, dmax):
 def parse_combo_residues(infile, dmax):
     groups=[]
     fhandle=open(infile)
-    receptor=numpy.loadtxt(infile, usecols=(0,), dtype=str)
-    ligand=numpy.loadtxt(infile, usecols=(1,), dtype=str)
+    with open(infile) as f: receptor = [line.strip('\n').split()[0] for line in f.readlines()]
+    with open(infile) as f: ligand = [line.strip('\n').split()[1] for line in f.readlines() ]
     n=0
     for i in receptor:
         if 'NA' in i:
@@ -78,7 +78,7 @@ def parse_combo_residues(infile, dmax):
         else:
             n+=1
     total_restraints=len(receptor)+len(ligand)
-    print "total restraints %s" % total_restraints
+    print("total restraints %s" % total_restraints)
     for res in receptor:
         # make multiple restraints to ligand, will be in one group, with 1
         # required, do the same for ligand
@@ -154,25 +154,25 @@ def main(args):
     elif args.ligand_infile:
         outdir=os.path.dirname(os.path.abspath(args.ligand_infile))
     else:
-        print "PLEASE PROVIDE A LIGAND OR PROTEIN FILE"
+        print("PLEASE PROVIDE A LIGAND OR PROTEIN FILE")
         sys.exit()
 # DOING LIGAND ONLY
     if args.ligand_infile:
-        print "reading one-to-one ligand atom contraints"
+        print("reading one-to-one ligand atom contraints")
         if not args.ldmax:
-            print "DID NOT SPECIFY MAX DIST FOR LIGAND RESTRAINT"
-            print "DEFAULT IS 10"
+            print("DID NOT SPECIFY MAX DIST FOR LIGAND RESTRAINT")
+            print("DEFAULT IS 10")
         ligdata=parse_ligand_atoms(args.ligand_infile, args.ldmin, args.ldmax)            
         if args.protein_infile:
 # DOING LIGAND + PROTEIN
             if args.specific==True:
-                print "reading one-to-one constraints from protein input file"
+                print("reading one-to-one constraints from protein input file")
                 resdata=parse_residues(args.protein_infile, args.dmax)
                 groups=[]
                 groups.append(resdata)
                 groups.append(ligdata)
             else:
-                print "creating combindations of constraints from input file"
+                print("creating combinations of constraints from protein input file")
                 groups=parse_combo_residues(args.protein_infile, args.dmax)
                 groups.append(ligdata)
             write_combo_json(groups, outdir, args.min_contacts)
@@ -182,17 +182,17 @@ def main(args):
             if args.specific:
                 write_combo_json(groups, outdir, min_contacts='all')
             else:
-                print "ADDING SPECIFIC HERE SINCE JUST LIGAND. IF OTHERWISE CHECK SCRIPT"
+                print("ADDING SPECIFIC ONE-TO-ONE RESTRAINT FOR LIGAND ONLY. IF OTHERWISE CHECK SCRIPT")
                 write_combo_json(groups, outdir, min_contacts='all')
     else:
 # DOING PROTEIN ONLY
         if args.specific==True:
-            print "reading one-to-one constraints from protein input file"
+            print("reading one-to-one constraints from protein input file")
             resdata=parse_residues(args.protein_infile, args.dmax)
-            print resdata
+            print(resdata)
             write_json(resdata, outdir, args.min_contacts)
         else:
-            print "creating combindations of constraints from input file"
+            print("creating combinations of constraints from input file")
             groups=parse_combo_residues(args.protein_infile, args.dmax)
             write_combo_json(groups, outdir, args.min_contacts)
     return
