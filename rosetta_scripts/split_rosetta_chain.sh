@@ -15,6 +15,4 @@ sed '1d' < $file > ${file%%.pdb*}_split.pdb
 ./run_rosetta_score_only.sh ${file%%.pdb*}.split_chainD.pdb
 ./run_rosetta_score_only.sh ${file%%.pdb*}.split_chainA.pdb
 
-#grep SCORE score_only.sc  | awk '{print $2, $4, $5, $10, $11, $12, $13, $14, $26}' >> rosetta_score_model.000.summary.txt
-
-
+mv score_only.sc ${file%%.pdb*}_score_only.sc

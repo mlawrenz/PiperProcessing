@@ -74,12 +74,33 @@ def main(reference, listfile=None):
                 count+=1
             else:
                 pass
-        fraction_native_contacts.append(('prep-%s' % file.split('prep-')[1].split('-out')[0], float(count)/total_native)) 
+        #fraction_native_contacts.append(('prep-%s' % file.split('prep-')[1].split('-out')[0], float(count)/total_native)) 
+        fraction_native_contacts.append((file, float(count)/total_native)) 
 
         dir=os.path.dirname(file)
         if dir=='':
             dir='./'
         numpy.savetxt('%s/contacts_model.000.summary.txt' % dir, fraction_native_contacts, fmt='%s')
+
+    surface_comp=[]
+    total_hb=[]
+    total_sb=[]
+    total_buried_SASA=[]
+    for file in interaction_files:
+        df=pd.read_csv(file, skipinitialspace=True)
+        #surface_comp.append(('prep-%s' % file.split('prep-')[1].split('-out')[0], sum(df['Surface\nComplementarity'])))
+        surface_comp.append(('prep-%s' % file, sum(df['Surface\nComplementarity'])))
+        #total_hb.append(('prep-%s' % file.split('prep-')[1].split('-out')[0], sum(df['# HB'])))
+        total_hb.append(('prep-%s' % file, sum(df['# HB'])))
+        #total_sb.append(('prep-%s' % file.split('prep-')[1].split('-out')[0],sum(df['# Salt\nBridges'])))
+        total_sb.append(('prep-%s' % file,sum(df['# Salt\nBridges'])))
+        #total_buried_SASA.append(('prep-%s' % file.split('prep-')[1].split('-out')[0], sum([float(i.split('%')[0]) for i in df['Buried\nSASA']])))
+        total_buried_SASA.append(('prep-%s' % file, sum([float(i.split('%')[0]) for i in df['Buried\nSASA']])))
+    numpy.savetxt('%s/surface_comp_model.000.summary.txt' % dir, surface_comp, fmt='%s')
+    numpy.savetxt('%s/total_hb_model.000.summary.txt' % dir, total_hb, fmt='%s')
+    numpy.savetxt('%s/total_sb_model.000.summary.txt' % dir, total_sb, fmt='%s')
+    numpy.savetxt('%s/total_buried_SASA_model.000.summary.txt' % dir, total_buried_SASA, fmt='%s')
+
 
     return
 
