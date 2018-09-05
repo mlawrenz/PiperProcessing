@@ -10,6 +10,7 @@ from schrodinger import structure
 from schrodinger.utils import fileutils
 from schrodinger.infra import mm
 from schrodinger.structutils import analyze
+import calculate_piper_rmsd
 
 
 def write_prime_inputs(asl, mini=False):
@@ -201,6 +202,13 @@ all_chains_dict, args.sasa_cutoff, args.distance_cutoff, binding_site_residues)
             asl=get_asl(rec_chain, lig_chain, all_chains_dict, backbone=False)
             write_prime_inputs(asl, mini=True)
             write_prime_inputs(asl, mini=False)
+        if args.rmsd==True:
+            ligands, st, binding_site_indices=find_binding_site_residues(structures['lig'], args.distance_cutoff)
+            asl='((fillres within 4 ((res.ptype "%s") ) ) AND (( backbone ) )) AND NOT ((atom.ele H)) AND ((chain.name %s))  ' % (ligands[0].pdbres, lig_chain)
+            calculate_piper_rmsd.main(args.lig, listfile=args.rmsdlist, asl=asl, writermsd=True)
+
+
+
     return
 
 if __name__=="__main__":
@@ -212,6 +220,8 @@ if __name__=="__main__":
     parser.add_argument('-d', dest='distance_cutoff', type=float, default=8.0, help="Receptor-ligand distance cutoff for residue selection. Default is 8.0 Anstrom")
     parser.add_argument('--debug',action='store_true',help="Debug.")
     parser.add_argument('--prime',action='store_true',help="Write prime outputs with ASL from find SASA")
+    parser.add_argument('--rmsd',action='store_true',help="Compute RMSD with SASA binding site residues, backbone, output RMSD.")
+    parser.add_argument('--rmsdlist', dest='rmsdlist', help="List of files to Compute RMSD with SASA binding site residues, backbone, output RMSD.")
 
     args = parser.parse_args()
     main(args)
