@@ -17,7 +17,8 @@ def coeffs(val):
 
 
 def get_data():
-    keys=['contacts', 'rmsd', 'cluster', 'surface_comp', 'total_buried_SASA', 'total_hb', 'total_sb', 'prime_mini_i_energy',] # 'prime_hybridmc']
+    keys=['contacts', 'rmsd', 'cluster', 'surface_comp', 'total_buried_SASA', 'total_hb', 'total_sb','rosetta_fa_atr','rosetta_fa_dun' 'rosetta_fa_elec', 'rosetta_fa_rep', 'rosetta_fa_sol', 'rosetta_hbond_bb_sc','rosetta_hbond_lr_bb', 'rosetta_hbond_sc', 'rosetta_lk_ball_wtd','rosetta_total_score',]
+
 
 
 
@@ -69,7 +70,8 @@ def get_df(data, global_name):
         metadata[model]=dict()
     #corr_keys=['contacts', 'rmsd', 'cluster'] #'charmm', 'prime_mini_i_energy',] # 'prime_hybridmc']
 
-    corr_keys=['contacts', 'rmsd', 'surface_comp', 'total_buried_SASA', 'total_hb', 'total_sb', 'prime_mini_i_energy',] # 'prime_hybridmc']
+    #corr_keys=['contacts', 'rmsd', 'surface_comp', 'total_buried_SASA', 'total_hb', 'total_sb', 'prime_mini_i_energy',] # 'prime_hybridmc']
+    corr_keys=['contacts', 'rmsd', 'surface_comp', 'total_buried_SASA', 'total_hb', 'total_sb','rosetta_fa_atr','rosetta_fa_dun' 'rosetta_fa_elec', 'rosetta_fa_rep', 'rosetta_fa_sol', 'rosetta_hbond_bb_sc','rosetta_hbond_lr_bb', 'rosetta_hbond_sc', 'rosetta_lk_ball_wtd','rosetta_total_score',]
 
 
     for model in metadata.keys():
@@ -107,9 +109,9 @@ def get_df(data, global_name):
                     results[model][name]['contacts_above_0.0']=len(df.loc[native])
                     native= df['contacts']>0.45
                     results[model][name]['contacts_above_0.5']=len(df.loc[native])
-                    rmsd_native=df['rmsd']< 8.5
-                    results[model][name]['rmsd_below_8.5']=len(df.loc[rmsd_native])
-                    ranks=[5,10,]
+                    rmsd_native=df['rmsd']< 8.0
+                    results[model][name]['rmsd_below_8.0']=len(df.loc[rmsd_native])
+                    ranks=[5,]
                     for rank in ranks:
                         test_contacts=df.iloc[:rank].loc[native]
                         test_rmsd=df.iloc[:rank].loc[rmsd_native]
@@ -138,7 +140,7 @@ def get_df(data, global_name):
                             print name, ckey
                             print df
                             print sorted_df 
-                    rmsd_native=df['rmsd']< 8.5
+                    rmsd_native=df['rmsd']< 8.0
                     native= df['contacts']>0.45
                     ranks=[5,10,]
                     for rank in ranks:
@@ -158,7 +160,7 @@ def get_df(data, global_name):
                             results[model][name]['rmsd_native_rank%s_ascend_%s' % (rank, ckey)]=0
 
                     sorted_df=df.sort_values(ckey, ascending=False)
-                    rmsd_native=df['rmsd']< 8.5
+                    rmsd_native=df['rmsd']< 8.0
                     native= df['contacts']>0.45
                     ranks=[5,10,]
                     for rank in ranks:
@@ -189,40 +191,48 @@ def get_df(data, global_name):
     return df
 
 def main():
-    dir='protein_3_restraints_and_ligand_15/'
+    dir='ligand_restraints_8_only/'
     print "on %s" % dir
-    topdir='/home/mlawrenz/PIPER_WORK_2018/validation_2018/cbln_bromodomain/%s/results/' % dir.rstrip('/')
-    global_name='cbln_bromodomain_%s' % dir.rstrip('/')
+    topdir='/home/mlawrenz/PIPER_WORK_2018/validation_2018/vhl_bromodomain/%s/results/' % dir.rstrip('/')
+    global_name='vhl_bromodomain_%s' % dir.rstrip('/')
     os.chdir(topdir)
     data=get_data()
     df=get_df(data, global_name)
     os.chdir(topdir)
-    ranks=[5,10]
+    ranks=[5,]
     output_columns=[]
     output_columns.append('contactsmax')
     output_columns.append('rmsdmin')
     output_columns.append('rmsdavg')
     output_columns.append('contacts_above_0.5')
-    output_columns.append('contacts_above_0.0')
-
+    output_columns.append('rmsd_below_8.0')
     for rank in ranks:
         ref=max(sum(df['rmsd_native_rank%s_cluster' % rank]), sum(df['contacts_native_rank%s_cluster' % rank]))
         output_columns.append('rmsd_native_rank%s_cluster' % rank)
         output_columns.append('contacts_native_rank%s_cluster' % rank)
         for column in df.columns:
             if 'rank%s' % rank in column:
-                if sum(df[column]) >= ref-2:
+                if sum(df[column]) >= ref:
                     print("%s may be predictive in ranking" % column)
                     print(df[column])
                     if column not in output_columns:
                         output_columns.append(column)
                 else:
                     pass
-                    #if 'cluster' in column or 'SASA' in column:
-                    #    print ref, column, sum(df[column])
-                    #    print df[column]
-    df.to_csv('%s.wenergy.csv' % global_name, columns=output_columns)
+                #if 'cluster' in column or 'SASA' in column:
+                #    print ref, column, sum(df[column])
+                #    print df[column]
+    df.to_csv('%s.wnewstrictenergy.csv' % global_name, columns=output_columns)
     return
 
 if __name__=="__main__":
     main()
+
+
+
+
+
+
+
+
+
