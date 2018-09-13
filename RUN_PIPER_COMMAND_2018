@@ -1,0 +1,12 @@
+receptor=clean-prep-receptor-with-warhead.pdb
+ligand=clean-prep-ligand-with-warhead.pdb
+receptor_param=receptor-warhead-name.json
+ligand_param=ligand-warhead-name.json
+
+
+restraints=distance_restraints.json
+ 
+source ~/.bashrc
+time `$PIPER_BIN/run_piper  --add-het ligand-warhead-name:${ligand_param} receptor-warhead-name:${receptor_param} --rec $receptor --lig $ligand --restraint-set distance_restraints.json -n 24 --mpi`
+
+

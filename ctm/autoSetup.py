@@ -23,6 +23,11 @@ def main():
     whA = Chem.MolFromMolFile(whAbindingConf)
     whB = Chem.MolFromMolFile(whBbindingConf)
 
+    for mol in Chem.SDMolSupplier(whBbindingConf):#, removeHs=False):
+        #mol.assignStereochemistryFrom3D()
+        print Chem.MolToSmiles(mol, isomericSmiles=True)
+        whB = Chem.MolFromSmiles(Chem.MolToSmiles(mol, isomericSmiles=True))
+    
     print 'whA smiles', Chem.MolToSmiles(whA, isomericSmiles=True)
     print 'whB_smiles', Chem.MolToSmiles(whB, isomericSmiles=True)
 
@@ -39,6 +44,7 @@ def main():
     if ctmFile:
         ctmFileRoot = ctmFile.split('/')[-1]
         for i, ctm in enumerate(Chem.SDMolSupplier(ctmFile)):
+            print Chem.MolToSmiles(ctm, True)
             if i == 0:
                 ligTitle = ctm.GetProp('_Name') 
                 if ligTitle == ctmFileRoot:

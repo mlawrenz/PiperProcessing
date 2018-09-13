@@ -204,9 +204,9 @@ combinations for your distances.txt file. Add --specific and restraints for the
 pairs of residues will be made''')
     parser.add_argument('-proteinfile', dest="protein_infile", help="file with residue pairs for distance restraints")
     parser.add_argument('-ligandfile', dest="ligand_infile", help="file with ligand atom pairs for distance restraints. First receptor protein ligand then ligand protein ligand")
-    parser.add_argument('-d', dest="dmax", default=4.5, help="dmax for protein distance restraints, default is 4.5, can probably leave this unless you want less tight criteria for restraints")
-    parser.add_argument('--ldmin', dest="ldmin", default=4.0, help="dmin for ligand atom distance restraints, default is 4.0")
-    parser.add_argument('--ldmax', dest="ldmax", default=15.0, help="dmax for ligand atom distance restraints, default is 15.0")
+    parser.add_argument('-d', dest="dmax", default=4.5, help="dmax for *PROTEIN* distance restraints, default is 4.5, can probably leave this unless you want less tight criteria for restraints")
+    parser.add_argument('--ldmin', dest="ldmin", default=4.0, help="dmin for *ligand* atom distance restraints, default is 4.0")
+    parser.add_argument('--ldmax', dest="ldmax", default=15.0, help="dmax for *ligand* atom distance restraints, default is 15.0")
     parser.add_argument('--min-contacts', dest="min_contacts", default=3,
 help="minimum number of contacts for ternary to have within selection of binding site residues. The default is 3. If you pass in (all) then this will be set to all specified.")
     parser.add_argument('--specific', action="store_true", dest="specific", help="use specific pairs of restraints from file. Default makes unbiased combinations.")

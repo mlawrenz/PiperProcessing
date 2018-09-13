@@ -72,12 +72,15 @@ def detectInternalCTMclashes(ctmMol):
     return numInternalCTMClashes
 
 
-def buildComplexes(whAconf, whBConfCoordDict, smartsWHADict, smirksDict, npAllwhBProtCoords, protMol, whAprotMol, nprotligclashes, nprotprotClashes):#whAprot, whBprot, smartsWHADict, whBConfCoordDict, whBConfCoordDict, smirksDict, npAllwhBProtCoords, protMol):
+def buildComplexes(whAconf, whBConfCoordDict, smartsWHADict, smirksDict, npAllwhBProtCoords, protMol, whAprotMol, nprotligclashes, nprotprotClashes, ligsOnly):#whAprot, whBprot, smartsWHADict, whBConfCoordDict, whBConfCoordDict, smirksDict, npAllwhBProtCoords, protMol):
     
     results = []
     inputIndex = whAconf[0]
     mol = whAconf[1]
     thisLinker = OEGetSDData(mol, 'linker')
+
+    #print smartsWHADict.keys()
+    #print whBConfCoordDict.keys()
     
     ss = OESubSearch(smartsWHADict[thisLinker])
     OEPrepareSearch(mol, ss)
@@ -124,9 +127,14 @@ def buildComplexes(whAconf, whBConfCoordDict, smartsWHADict, smirksDict, npAllwh
             OEAddMols(outComplex, prodMol)
 
         numInternalCTMclashes = detectInternalCTMclashes(prodMol)
-        
+        OESetSDData(prodMol, 'numInternalCTMclashes', str(numInternalCTMclashes))
 
         result[5] = numInternalCTMclashes
+
+        if ligsOnly:
+            result[0] = OEGraphMol(prodMol)
+            results.append(result)
+            continue
 
         nprot = len(npAllwhBProtCoords)
         E = R*npAllwhBProtCoords.T + np.tile(t, (1,nprot))
@@ -254,6 +262,7 @@ def main():
     parser.add_argument('--maxInternalCTMclashes', type=int, default=5)
     parser.add_argument('--whAconfs_maxConfs', default=1000, type=int)
     parser.add_argument('--whBconfs_rms', default=0.01, type=float)
+    parser.add_argument('--ligsOnly', action='store_true')
     args = parser.parse_args()
     
     whA_linkers_file = args.whA_linkers_file
@@ -384,7 +393,7 @@ def main():
     print 'final chunksize nproc', chunksize, nproc
     
     Pool = mp.Pool(processes=nproc)
-    poolPart = partial(buildComplexes, whBConfCoordDict=whBConfCoordDict, smartsWHADict=smartsWHADict, smirksDict=smirksDict, npAllwhBProtCoords=npAllwhBProtCoords, protMol=protMol, whAprotMol=whAprotMol, nprotligclashes=nprotligclashes, nprotprotClashes=nprotprotClashes)
+    poolPart = partial(buildComplexes, whBConfCoordDict=whBConfCoordDict, smartsWHADict=smartsWHADict, smirksDict=smirksDict, npAllwhBProtCoords=npAllwhBProtCoords, protMol=protMol, whAprotMol=whAprotMol, nprotligclashes=nprotligclashes, nprotprotClashes=nprotprotClashes, ligsOnly=args.ligsOnly)
 
     results = Pool.map_async(poolPart, iterable=molList, chunksize=chunksize)
     allResults = results.get()
@@ -405,15 +414,22 @@ def main():
     writeListForCTMpdbs = []
     for oneWorker in allResults:
         for oneResult in oneWorker:
+            #print oneResult
             ctmMol, complexMol, complexWCTMMol, protProtPassBool, protLigPassBool, numInternalCTMclashes, linkerName, whAconf, whBconf = oneResult
             outResults.write("\t".join(['complex'+str(complexNum), linkerName, str(whAconf), str(whBconf), str(numInternalCTMclashes), str(protProtPassBool), str(protLigPassBool)]))
             outResults.write("\n")
             print whAconf, whBconf#, numInternalCTMclashes, args.maxInternalCTMclashes
+
+
             if numInternalCTMclashes <= args.maxInternalCTMclashes:
                 #print 'begin ctm mol write', time.time()
                 OEWriteMolecule(outmols, ctmMol)
                 #print 'end ctm mol write', time.time()
-                
+
+            if args.ligsOnly:
+                complexNum += 1
+                continue
+            
             if protProtPassBool:
                 #print 'being prot prot mol write', time.time()
                 OEWriteMolecule(outproteins, complexMol)
@@ -423,28 +439,6 @@ def main():
                 OEWriteMolecule(outComplexes, complexWCTMMol)
                 writeListForCTMpdbs.append([OEGraphMol(complexWCTMMol), complexNum])
 
-                
-##                print 'begin whole ctm initial PDB write', time.time()
-##                pdbOutFileName = pdbOutDir+'complex{}.pdb'.format(str(complexNum))
-##                pdbOutFile = oemolostream(pdbOutFileName)
-##                OEWriteMolecule(pdbOutFile, complexWCTMMol)
-##                pdbOutFile.flush()
-##                pdbOutFile.close()
-##                print 'end whole ctm initial PDB write', time.time()
-##                
-##
-##                print 'begin reformat', time.time()
-##                reformatFile = open(pdbOutFileName, 'r')
-##                text = reformatFile.read().strip("\n")
-##                reformatFile.close()
-##                firstChunk, secondChunk = text.split("\nENDMDL")
-##                replacedSecondChunk = secondChunk.replace('ATOM  ', 'HETATM')
-##                outText = "".join([firstChunk, replacedSecondChunk])
-##                reformatFile = open(pdbOutFileName, 'w')
-##                reformatFile.write(outText)
-##                reformatFile.flush()
-##                reformatFile.close()
-##                print 'end reformat', time.time()
             complexNum += 1
 
     writePoolPart = partial(writeOutPDBsForComplexes, pdbOutDir=pdbOutDir)

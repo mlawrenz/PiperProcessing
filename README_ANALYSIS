@@ -1,0 +1,91 @@
+All scripts mentioned are deposited in /mnt/public/Molecular_Modeling/PIPER/PiperProcessing/ and defined at $PIPER/ here.
+
+Steps for Analysis in prospective and retrospective cases:
+
+
+1) Process output structure files for analysis in Maestro.
+------------------------------------------------------------------------------------------
+Go into the subdirectory with Piper output model*pdb files and a results.txt
+file. This script will run on model.000.*min*pdb files within this directory and
+use the report file. It will compute all CA atom RMSD if you pass a reference file.
+
+If retrospective:
+ref=X-ray.pdb
+$SCHRODINGER/run $PIPER/processPiper.py --chain C --rmsd-ref $ref
+
+If prospective:
+$SCHRODINGER/run $PIPER/processPiper.py
+
+
+This makes an rmsd-maefiles/ directory, with PIPER cluster size and CHARMM
+energy added to the maefiles, as well as the RMSD property if you have a
+reference file. If you are computing RMSD the rmsd.txt will also be written with
+these values and corresponding model filenames.
+
+
+2) Run protein interaction analysis: For both prospective and retrospective
+cases.
+------------------------------------------------------------------------------------------
+
+First run protein preparation on the complex maefiles or pdbfiles. I used -noepik and -fix to speed these jobs.
+
+program=/opt/apps/Schrodinger/default/utilities/prepwizard
+$program -f 3 -fix -noepik -r 0.3 -HOST cpu_only:1 -NOLOCAL complex.mae prep-copmlex.mae
+
+Run interaction analysis script. You need to pass in the two chains defining the
+binding partners. I added te other flags to allow for loose interaction metrics.
+
+$SCHRODINGER/run protein_interaction_analysis.py -structure $input -group1 C -group2 D -outfile ${input%%.mae*}.interaction.csv -hbond_max_dist 4.0
+-allowable_vdw_overlap 3.0 -salt_bridge_max_dist 5.0 -max_stack_dist 5.0
+
+
+This outputs an interaction.csv file with the following information on a
+per-residue basis for the interface:
+Residue    # residue for the line of descriptors
+Closest     # closest residues
+Distance    # distance of closest interacting residues
+Specific Interactions # reisdues with specific interactions
+# HB
+# Salt Bridges
+# Pi Stacking
+# Disulfides
+# vdW Clash
+Surface Complementarity
+Buried SASA
+
+3) For retrospective case: Evaluate %native contacts from interaction script
+output. 
+------------------------------------------------------------------------------------------
+Run interaction script on X-ray reference PDB. Generate list of model
+interaction files and run this script to get a % native contacts for the files
+you pass in with the list:
+
+$SCHRODINGER/run $PIPER/get_native_contacts.py -r reference.interaction.csv -l list_of_interact_files
+
+This outputs contacts_model.000.summary.txt 
+
+4) For prospective cases: Run Rosetta to relax the complex and get more descriptors.
+SEE README_ROSETTA.
+
+5) For prospective cases: Output all cluster members (get_piper_cluster.sh) for PIPER to run CTM
+sampling script ROCS match on:
+
+for file in `ls model*.000.*min*pdb`
+do 
+name=${file%%.min*}; 
+tar=`ls ../*tar*`
+mkdir cluster-members-${name}/;
+piper_cluster_members  --output-dir  cluster-members-${name}/ $tar $file; 
+done
+
+
+This outputs only the ligand protein; for analysis, you will need to create
+complexes. You have the receptor defined in your PIPER docking script, you can
+clean that of "END" flag and cat into the ligand*pdb structures to make this.
+
+BEWARE THAT THESE lig*pdb FILES DO NOT HAVE THE SMALL MOLECULE AS HETATM.
+
+
+
+
+

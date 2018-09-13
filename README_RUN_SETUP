@@ -1,0 +1,151 @@
+All scripts mentioned are deposited in /mnt/public/Molecular_Modeling/PIPER/PiperProcessing/ and defined at $PIPER/ here.
+Run -h to get tuneable options.
+
+
+General workflow for a CTM and 2 protein binding partners:
+
+1) Prepare two protein structure inputs with small molecule ligands bound (warheads, derived from CTM).
+---------------------------------------------------------------------------------------
+
+Use information on linker length to determine ligand atom restraint cutoffs.
+Also include protein restraints if CTM linker length is very long ( > 10 A). See
+below for deriving protein restraints.
+
+Run protein preparation and check ligand bond orders and protonation states. Export
+to PDB and clean the exported PDBS of non-essential lines.
+
+Example of shell command (clean_pdb_files.sh) to clean PDBs:
+
+for file in `ls *pdb`
+do
+cat $file | grep -v ANISOU | grep -v REMARK | grep -v TITLE | grep -v HEADER |
+grep -v CRYS | grep -v EXPD | grep -v CONECT > test.pdb
+mv test.pdb clean-$file
+done
+
+
+
+2) Generate ligand parameters.
+---------------------------------------------------------------------------------------
+FIRST MAKE SURE YOUR LIGANDS HAVE THE SAME CHAIN AS THE PROTEIN IT IS ASSOCIATED
+WITH. AND A UNIQUE RESID NUMBER AND NAME.
+
+Make a PDB for each of your two ligands and run these commands to get a json of
+parameters:
+
+~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize JQ1.pdb JQ1.json
+~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize V32.pdb V32.json
+
+You will pass these json files into PIPER.
+
+3) Generate ligand restraints file.
+---------------------------------------------------------------------------------------
+
+Manually make ligand restraints file with the receptor ligand information first,
+and the ligand (to be docked) protein ligand information second. THAT ORDER IS
+IMPORTANT. Also double check here that the ligand chain matches the protein
+chain that it is bound to.  For this restraint file use just a separated a space or tab, not a comma. 
+
+format of file:
+protA_chain-protA_resi-protA_atomname protB_chain-protB_resi-protB_atomname 
+
+example:
+C-352-N2    A-212-CAB
+
+You will pass this into a Json generator script in step #5 to get input for
+Piper.
+
+4) Generate protein restraints file to be used in combination with ligand restraints. This is recommended if you have little to no CTM linker
+information, or if you have long CTM linker lengths ( > 10 Ang.):
+---------------------------------------------------------------------------------------
+
+Find binding site residues for protein-protein restraints based on warhead
+(molecule ligand) binding sites and SASA. Default definition of the "binding
+site" is 8 Ang radius from ligand. You should check results visually, by looking
+at the residues in the output text file structurally and look for coverage around the binding site. 
+
+
+$SCHRODINGER/run $PIPER/find_binding_site_residues_sasa.py -r receptor-protein-with-small-molecule.pdb -l ligand-protein-with-small-molecule.pdb -d 8
+
+Output most relevant for PIPER, used in step #5, is file:
+protein_distances_for_restraints.txt
+
+The columns here are not specifying interactions within each line. The list
+residues that will be used to generate all combinations of these pairs for possible restraints. 
+PLEASE CHECK THAT THESE RESIDUES COVER THE BINDING SITE adequately.  You can also edit the distances_for_restraints.txt manually to add/remove
+residues after visual inspection.
+
+The script also outputs all binding site residues with SASA for the receptor and
+ligand proteins:
+rec_sasa50_binding_site_residues.txt
+lig_sasa50_binding_site_residues.txt
+
+You can also write prime input files to optimize only high SASA groups by adding --prime to
+find_binding_site_residues_sasa.py script.
+
+5) Get JSON file format for restraints.
+---------------------------------------------------------------------------------------
+
+$SCHRODINGER/run $PIPER/GetPiperJson.py -proteinfile protein_restraints.txt -ligandfile ligand_restraints.txt --ldmin 4.5 --ldmax 15 --min-contacts 4
+
+If you only want ligand restraints, leave off the proteinfile flag and min-contacts.
+ldmin and ldmax set min and max distance for ligand atom-to-atom restraints.
+
+--min-contacts sets the final required protein residue-residue contacts in the
+docked complex. Recommended 3. If using in addition to a ligand, add that. For example, 
+if you want 3 protein residues and also the ligand atom restraint, use --min-contacts 4.
+
+In vim you can use this command to more clearly  visualize JSON file:
+:%!python -m json.tool
+
+6) Run Piper in parallel.
+---------------------------------------------------------------------------------------
+
+I created the following script (RUN_PIPER_COMMAND_2018)for the protein docking commands:
+
+receptor=clean-prep-receptor-with-warhead.pdb
+ligand=clean-prep-ligand-with-warhead.pdb
+receptor_param=receptor-warhead-name.json
+ligand_param=ligand-warhead-name.json
+
+
+restraints=distance_restraints.json
+
+source ~/.bashrc
+time `$PIPER_BIN/run_piper  --add-het ligand-warhead-name:${ligand_param} receptor-warhead-name:${receptor_param} --rec $receptor --lig $ligand --restraint-set distance_restraints.json -n 24 --mpi`
+
+
+Run this script on AWS with this command:
+qsub -N piper_5T35_12 -cwd -q cpu -pe mpi 12 ./RUN_PIPER_COMMAND_2018 
+
+Make sure the piper installation is in your path. If you are having problems getting
+a lauch you can add these flags to point ot the installation and license:
+--piper-license ~/piper-1.1.0/piper_package/piper_license  --piper-base ~/piper-1.1.0/piper_package
+
+Output will be complexes labeled:
+model.000.01.min.pdb
+model.000.02.min.pdb
+model.000.03.min.pdb
+....
+model.000.18.min.pdb
+
+as well as
+and model.001.XX.min.pdb
+and model.002.XX.min.pdb
+and model.003.XX.min.pdb
+
+The model.000, model.001, model.002 represents the coefficients used to balance
+the enery search terms by Piper. We have tested model.000, the "Balanced" approach.
+
+PIPER OUTPUT COEFFICIENTS:
+0- Balanced
+1- Electrostatics weighted
+2- Hydrophobics weighted
+3- No Potential?
+
+
+The output is ranked by cluster size for the results. See analysis README for
+furhter steps for processing output.
+
+
+

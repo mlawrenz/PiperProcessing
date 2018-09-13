@@ -1,3 +1,155 @@
+All scripts mentioned are deposited in /mnt/public/Molecular_Modeling/PIPER/PiperProcessing/ and defined at $PIPER/ here.
+
+
+General workflow for a CTM and 2 protein binding partners:
+
+1) Prepare two protein structure inputs with small molecule ligands bound (warheads, derived from CTM).
+---------------------------------------------------------------------------------------
+
+Use information on linker length to determine ligand atom restraint cutoffs.
+Also include protein restraints if CTM linker length is very long ( > 10 A). See
+below for deriving protein restraints.
+
+Run protein preparation and check ligand bond orders and protonation states. Export
+to PDB and clean the exported PDBS of non-essential lines.
+
+2) Generate ligand parameters.
+---------------------------------------------------------------------------------------
+Make a PDB for each of your two ligands and run these commands to get a json of
+parameters:
+
+~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize JQ1.pdb JQ1.json
+~/atlas_parameterization-1.0.6/bin/atlas_parameterize --dont-minimize V32.pdb V32.json
+
+You will pass these json files into PIPER.
+
+3) Generate ligand restraints file.
+---------------------------------------------------------------------------------------
+
+Manually make ligand restraints file with the receptor ligand information first,
+and the ligand (to be docked) protein ligand information second. THAT ORDER IS
+IMPORTANT. Also IMPORTANT is assigning the ligands that same chain as the protein chain that they are bound
+to. Just separated a space or tab, not a comma. 
+
+format of file:
+protA_chain-protA_resi-protA_atomname protB_chain-protB_resi-protB_atomname 
+
+example:
+C-352-N2    A-212-CAB
+
+You will pass this into a Json generator script in step #5 to get input for
+Piper.
+
+4) Generate protein restraints file to be used in combination with ligand restraints. This is recommended if you have little to no CTM linker
+information, or if you have long CTM linker lengths ( > 10 Ang.):
+---------------------------------------------------------------------------------------
+
+Find binding site residues for protein-protein restraints based on warhead
+(molecule ligand) binding sites and SASA. Default definition of the "binding
+site" is 8 Ang radius from ligand. It is good practice to check results visually: 
+look at the residues highlighted in the text file structurally and look for coverage around the binding site. 
+
+$SCHRODINGER/run $PIPER/find_binding_site_residues_sasa.py -r receptor-protein-with-small-molecule.pdb -l ligand-protein-with-small-molecule.pdb -d 8
+
+Output is file protein_distances_for_restraints.txt
+
+5) Get JSON file format for restraints.
+---------------------------------------------------------------------------------------
+
+$SCHRODINGER/run $PIPER/GetPiperJson.py -proteinfile protein_restraints.txt -ligandfile ligand_restraints.txt --ldmin 4.5 --ldmax 15 --min-contacts 4
+
+If you only want ligand restraints, leave off the proteinfile flag and min-contacts.
+ldmin and ldmax set min and max distance for ligand atom-to-atom restraints.
+
+--min-contacts sets the final required protein residue-residue contacts in the
+docked complex. Recommended 3. If using in addition to a ligand, add that. For example, 
+if you want 3 protein residues and also the ligand atom restraint, use --min-contacts 4.
+
+
+6) Run Piper in parallel.
+---------------------------------------------------------------------------------------
+
+Protein docking commands:
+~/piper-1.1.2b1/piper_package/bin/run_piper --add-het JQ1:JQ1.json V32:V32.json --rec prep-aligned_vhl_5T35.pdb --lig prep-moved_brd4_5T35.pdb --restraint-set distance_restraints.json  --mpi --np 12
+
+(you can scale to more processors and put it in a script and run this on AWS
+with this command:
+qsub -N atlas_fbw7_12 -cwd -q cpu -pe mpi 12 ./run.sh 
+
+Make sure the piper command is in your path. If you are having problems getting
+a lauch you can add these flags to point ot the installation and license:
+--piper-license ~/piper-1.1.0/piper_package/piper_license  --piper-base ~/piper-1.1.0/piper_package
+
+
+==========================================ANALYSIS=======================================================
+
+*process output structure files for analysis in Maestro
+Go into the subdirectory with model*pdb files and a results.txt file. Default
+will run on model.000.*min*pdb files and use the report file. Will compute all
+CA atom RMSD if you pass a reference file.
+$SCHRODINGER/run
+/mnt/public/Molecular_Modeling/PIPER/PiperProcessing/processPiper.py --chain A 
+
+This makes an rmsd-maefiles/ directory, with the RMSD property added to the
+maefiles.
+
+Run prepare protein on these structures. I used -noepik and -fix else I had alot
+of problems with jobs taking a really long time.
+Run interaction analysis script. Run get_contacts.py
+You can get prime inputs to optimize only high SASA groups by adding --prime to
+find_binding_site_residues_sasa.py script.
+
+
+
+MORE DETAIL ON WORKFLOW BELOW:
+
+For protein binding site restraints first run this to get binding site
+residues with high(er) SASA: 
+----------------------------------------
+$SCHRODINGER/run
+/mnt/public/Molecular_Modeling/PIPER/PiperProcessing//find_binding_site_residues_sasa.py
+-r receptor-protein-with-small-molecule.pdb -l
+ligand-protein-with-small-molecule.pdb
+
+Run -h to get tuneable options.
+Outputs all binding site residues with SASA:
+rec_sasa50_binding_site_residues.txt
+lig_sasa50_binding_site_residues.txt
+
+Also outputs file of above residues selected by SASA to be used for distance
+restraints:
+distances_for_restraints.txt
+The columns here are not restricted to each other within each line, but rather
+al combinations of these pairs are added to possible restraints. This is for
+more prospective work.
+
+
+PLEASE CHECK THAT THESE RESIDUES ARE GOOD FOR YOUR PURPOSE. ITERATIONS MAY BE
+NECESSARY TO GET THE BEST RESIDUES.
+edit the distances_for_restraints.txt to add/remove residues
+
+
+Make distance restraints file JSON:
+------------------------------------------
+
+In vim you can use this to visualize JSON file:
+:%!python -m json.tool
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 General workflow for a CTM and 2 protein binding partners:
 Get two proteins with ligands bound (derived from CTM)
 Use information on linker length to determine ligand atom restraint cutoffs.
@@ -95,3 +247,9 @@ Make distance restraints file JSON:
 
 In vim you can use this to visualize JSON file:
 :%!python -m json.tool
+
+PIPER OUTPUT COEFFICIENTS:
+0- Balanced * default
+1- Electrostatics weighted
+2- Hydrophobics weighted
+3- No Potential?
